@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>wnstj 디펜스 게임</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #222;
+            color: #fff;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+        #game-container {
+            position: relative;
+            display: inline-block;
+            margin-top: 10px;
+        }
+        canvas {
+            background-color: #333;
+            border: 4px solid #555;
+            display: block;
+        }
+        #ui-panel {
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 10px 15px;
+            font-size: 14px;
+            font-weight: bold;
+            background-color: #444;
+            color: #fff;
+            border: 2px solid #666;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: 0.2s;
+        }
+        button:hover {
+            background-color: #555;
+        }
+        button.active {
+            background-color: #007bff;
+            border-color: #00ffff;
+        }
+        #status-bar {
+            margin-bottom: 10px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .info {
+            color: #aaa;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🎮 wnstj 디펜스 게임</h1>
+    
+    <div id="status-bar">
+        HP: <span id="hp">20</span> | 
+        GOLD: <span id="gold">150</span> G | 
+        WAVE: <span id="wave">0</span>
+    </div>
+
+    <div id="game-container">
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
+    </div>
+
+    <div id="ui-panel">
+        <button onclick="selectTower('refund')">환불 (0G)</button>
+        <button onclick="selectTower('basic')">기본 (50G)</button>
+        <button onclick="selectTower('fast')">연사 (80G)</button>
+        <button onclick="selectTower('aoe')">광역 (120G)</button>
+        <button onclick="selectTower('slow')">감속 (100G)</button>
+        <button onclick="startWave()" style="background-color: #28a745;">다음 웨이브 시작</button>
+    </div>
+    
+    <div class="info">
+        * 마우스를 캔버스 위에 올리면 설치 가능 여부와 타워 범위를 미리 볼 수 있습니다.<br>
+        * 길(갈색 경로) 위에는 타워를 설치할 수 없습니다. 후반 웨이브일수록 난이도가 크게 증가합니다!
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let hp = 20;
+        let gold = 150;
+        let wave = 0;
+        let gameActive = true;
+
+        const towerTypes = {
+            basic: { cost: 50, range: 100, damage: 15, color: '#3498db', name: '기본', fireRate: 30 },
+            fast: { cost: 80, range: 80, damage: 8, color: '#e67e22', name: '연사', fireRate: 12 },
+            aoe: { cost: 120, range: 120, damage: 25, color: '#9b59b6', name: '광역', fireRate: 50, isAoe: true },
+            slow: { cost: 100, range: 90, damage: 5, color: '#1abc9c', name: '감속', fireRate: 40, isSlow: true }
+        };
+
+        let selectedTowerType = null;
+        let mouseX = 0;
+        let mouseY = 0;
+        let isMouseInCanvas = false;
+
+        const pathPoints = [
+            { x: 0, y: 200 },
+            { x: 200, y: 200 },
+            { x: 200, y: 80 },
+            { x: 550, y: 80 },
+            { x: 550, y: 320 },
+            { x: 800, y: 320 }
+        ];
+        const pathWidth = 50;
+
+        let towers = [];
+        let enemies = [];
+        let projectiles = [];
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+            isMouseInCanvas = true;
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            isMouseInCanvas = false;
+        });
+
+        canvas.addEventListener('click', () => {
+            if (!gameActive) return;
+
+            if (selectedTowerType === 'refund') {
+                const index = towers.findIndex(t => Math.hypot(t.x - mouseX, t.y - mouseY) < 20);
+                if (index !== -1) {
+                    const tType = towers[index].type;
+                    const refundGold = Math.floor((towerTypes[tType]?.cost || 100) * 0.7);
+                    gold += refundGold;
+                    towers.splice(index, 1);
+                    updateUI();
+                }
+                return;
+            }
+
+            if (!selectedTowerType || !towerTypes[selectedTowerType]) return;
+
+            const cost = towerTypes[selectedTowerType].cost;
+            if (gold < cost) {
+                alert("골드가 부족합니다!");
+                return;
+            }
+
+            if (isOnPath(mouseX, mouseY) || isCollidingWithTower(mouseX, mouseY)) {
+                return;
+            }
+
+            towers.push({
+                x: mouseX,
+                y: mouseY,
+                type: selectedTowerType,
+                cooldown: 0
+            });
+
+            gold -= cost;
+            updateUI();
+        });
+
+        function selectTower(type) {
+            selectedTowerType = type;
+            const buttons = document.querySelectorAll('#ui-panel button');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            
+            const idx = ['refund', 'basic', 'fast', 'aoe', 'slow'].indexOf(type);
+            if (idx !== -1) buttons[idx].classList.add('active');
+        }
+
+        function updateUI() {
+            document.getElementById('hp').innerText = hp;
+            document.getElementById('gold').innerText = gold;
+            document.getElementById('wave').innerText = wave;
+        }
+
+        function isOnPath(x, y) {
+            for (let i = 0; i < pathPoints.length - 1; i++) {
+                const p1 = pathPoints[i];
+                const p2 = pathPoints[i + 1];
+                if (isPointNearLineSegment(x, y, p1.x, p1.y, p2.x, p2.y, pathWidth / 2 + 10)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function isCollidingWithTower(x, y) {
+            return towers.some(t => Math.hypot(t.x - x, t.y - y) < 25);
+        }
+
+        function isPointNearLineSegment(px, py, x1, y1, x2, y2, maxDistance) {
+            const A = px - x1;
+            const B = py - y1;
+            const C = x2 - x1;
+            const D = y2 - y1;
+
+            const dot = A * C + B * D;
+            const lenSq = C * C + D * D;
+            let param = -1;
+            if (lenSq !== 0) param = dot / lenSq;
+
+            let xx, yy;
+
+            if (param < 0) {
+                xx = x1;
+                yy = y1;
+            } else if (param > 1) {
+                xx = x2;
+                yy = y2;
+            } else {
+                xx = x1 + param * C;
+                yy = y1 + param * D;
+            }
+
+            const dx = px - xx;
+            const dy = py - yy;
+            return Math.hypot(dx, dy) < maxDistance;
+        }
+
+        function startWave() {
+            if (enemies.length > 0) return;
+            wave++;
+            updateUI();
+
+            let hpMultiplier = 1 + wave * 0.2;
+            let speedMultiplier = 1 + wave * 0.02;
+            
+            if (wave >= 6) {
+                const hardScale = wave - 5;
+                hpMultiplier += Math.pow(hardScale, 1.6) * 0.6;
+                speedMultiplier += hardScale * 0.08;
+            }
+
+            const enemyCount = 5 + wave * 2;
+            for (let i = 0; i < enemyCount; i++) {
+                enemies.push({
+                    x: pathPoints[0].x,
+                    y: pathPoints[0].y,
+                    pathIndex: 0,
+                    maxHp: Math.floor(50 * hpMultiplier),
+                    hp: Math.floor(50 * hpMultiplier),
+                    speed: (1.5 + Math.random() * 0.4) * speedMultiplier,
+                    slowDuration: 0,
+                    spawnDelay: i * 40,
+                    reward: 10 + wave * 2
+                });
+            }
+        }
+
+        function loop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.strokeStyle = '#8e7155';
+            ctx.lineWidth = pathWidth;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.beginPath();
+            ctx.moveTo(pathPoints[0].x, pathPoints[0].y);
+            for (let i = 1; i < pathPoints.length; i++) {
+                ctx.lineTo(pathPoints[i].x, pathPoints[i].y);
+            }
+            ctx.stroke();
+
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                const e = enemies[i];
+                if (e.spawnDelay > 0) {
+                    e.spawnDelay--;
+                    continue;
+                }
+
+                let currentSpeed = e.speed;
+                if (e.slowDuration > 0) {
+                    currentSpeed *= 0.5;
+                    e.slowDuration--;
+                }
+
+                const target = pathPoints[e.pathIndex + 1];
+                const angle = Math.atan2(target.y - e.y, target.x - e.x);
+                
+                e.x += Math.cos(angle) * currentSpeed;
+                e.y += Math.sin(angle) * currentSpeed;
+
+                if (Math.hypot(target.x - e.x, target.y - e.y) < currentSpeed + 2) {
+                    e.pathIndex++;
+                    if (e.pathIndex >= pathPoints.length - 1) {
+                        hp--;
+                        enemies.splice(i, 1);
+                        updateUI();
+                        if (hp <= 0) {
+                            hp = 0;
+                            gameActive = false;
+                            updateUI();
+                            alert("게임 오버! 웨이브 " + wave + "에서 패배했습니다.");
+                        }
+                        continue;
+                    }
+                }
+
+                ctx.fillStyle = e.slowDuration > 0 ? '#5dade2' : '#e74c3c';
+                ctx.beginPath();
+                ctx.arc(e.x, e.y, 12, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#444';
+                ctx.fillRect(e.x - 15, e.y - 22, 30, 5);
+                ctx.fillStyle = '#2ecc71';
+                ctx.fillRect(e.x - 15, e.y - 22, (e.hp / e.maxHp) * 30, 5);
+            }
+
+            towers.forEach(t => {
+                const typeInfo = towerTypes[t.type];
+                
+                ctx.fillStyle = typeInfo.color;
+                ctx.beginPath();
+                ctx.arc(t.x, t.y, 16, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#fff';
+                ctx.stroke();
+
+                if (t.cooldown > 0) t.cooldown--;
+
+                if (t.cooldown === 0) {
+                    const targetEnemy = enemies.find(e => e.spawnDelay <= 0 && Math.hypot(e.x - t.x, e.y - t.y) <= typeInfo.range);
+                    
+                    if (targetEnemy) {
+                        projectiles.push({
+                            x: t.x, y: t.y,
+                            target: targetEnemy,
+                            speed: 6,
+                            damage: typeInfo.damage,
+                            isAoe: typeInfo.isAoe || false,
+                            isSlow: typeInfo.isSlow || false,
+                            color: typeInfo.color
+                        });
+                        t.cooldown = typeInfo.fireRate;
+                    }
+                }
+            });
+
+            for (let i = projectiles.length - 1; i >= 0; i--) {
+                const p = projectiles[i];
+                if (!enemies.includes(p.target)) {
+                    projectiles.splice(i, 1);
+                    continue;
+                }
+
+                const angle = Math.atan2(p.target.y - p.y, p.target.x - p.x);
+                p.x += Math.cos(angle) * p.speed;
+                p.y += Math.sin(angle) * p.speed;
+
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+                ctx.fill();
+
+                if (Math.hypot(p.target.x - p.x, p.target.y - p.y) < 8) {
+                    if (p.isAoe) {
+                        enemies.forEach(e => {
+                            if (e.spawnDelay <= 0 && Math.hypot(e.x - p.x, e.y - p.y) <= 80) {
+                                e.hp -= p.damage;
+                            }
+                        });
+                    } else {
+                        p.target.hp -= p.damage;
+                    }
+
+                    if (p.isSlow) {
+                        p.target.slowDuration = 90;
+                    }
+
+                    for (let j = enemies.length - 1; j >= 0; j--) {
+                        if (enemies[j].hp <= 0) {
+                            gold += enemies[j].reward;
+                            enemies.splice(j, 1);
+                            updateUI();
+                        }
+                    }
+
+                    projectiles.splice(i, 1);
+                }
+            }
+
+            if (isMouseInCanvas && selectedTowerType && selectedTowerType !== 'refund') {
+                const typeInfo = towerTypes[selectedTowerType];
+                const placementInvalid = isOnPath(mouseX, mouseY) || isCollidingWithTower(mouseX, mouseY);
+
+                ctx.fillStyle = placementInvalid ? 'rgba(231, 76, 60, 0.15)' : 'rgba(52, 152, 219, 0.15)';
+                ctx.strokeStyle = placementInvalid ? 'rgba(231, 76, 60, 0.6)' : 'rgba(52, 152, 219, 0.6)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(mouseX, mouseY, typeInfo.range, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = typeInfo.color;
+                ctx.globalAlpha = 0.5;
+                ctx.beginPath();
+                ctx.arc(mouseX, mouseY, 16, 0, Math.PI * 2);
+                ctx.fill();
+                
+                if (placementInvalid) {
+                    ctx.strokeStyle = '#e74c3c';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(mouseX - 8, mouseY - 8);
+                    ctx.lineTo(mouseX + 8, mouseY + 8);
+                    ctx.moveTo(mouseX + 8, mouseY - 8);
+                    ctx.lineTo(mouseX - 8, mouseY + 8);
+                    ctx.stroke();
+                }
+                ctx.globalAlpha = 1.0;
+            }
+
+            if (gameActive) {
+                requestAnimationFrame(loop);
+            }
+        }
+
+        updateUI();
+        loop();
+    </script>
+</body>
+</html>

@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>wnstj 강화하기 - 명예의 전당 리셋판</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts (Jua / Noto Sans KR) -->
+    <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #120e0b;
+            color: #f3f4f6;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .font-jua {
+            font-family: 'Jua', sans-serif;
+        }
+        .btn-press {
+            transition: transform 0.05s ease, filter 0.1s ease;
+        }
+        .btn-press:active {
+            transform: scale(0.95);
+            filter: brightness(0.9);
+        }
+        .glass-panel {
+            background: rgba(28, 22, 18, 0.88);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(245, 158, 11, 0.25);
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #110e0c;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d97706;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between items-center p-2 sm:p-4 bg-radial from-amber-950 via-neutral-950 to-black text-amber-50">
+
+    <!-- Nickname Registration Modal -->
+    <div id="nickname-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4 hidden">
+        <div class="glass-panel max-w-md w-full p-6 sm:p-8 rounded-3xl text-center border-2 border-amber-500/50 shadow-2xl">
+            <div class="w-20 h-20 bg-amber-500/20 text-amber-400 rounded-full flex items-center justify-center mx-auto mb-4 border border-amber-400/40 text-4xl">
+                <i class="fa-solid fa-face-grin-squint"></i>
+            </div>
+            <h2 class="text-3xl font-jua text-amber-400 mb-2">wnstj 강화하기</h2>
+            <p class="text-sm text-neutral-300 mb-6">게임에서 사용할 닉네임을 입력해 주세요.<br><span class="text-amber-400 font-semibold">내 실기록으로 랭킹에 등록됩니다.</span></p>
+            
+            <form id="nickname-form" onsubmit="handleNicknameSubmit(event)" class="space-y-4">
+                <div>
+                    <input type="text" id="nickname-input" autocomplete="off" maxlength="12" placeholder="닉네임 입력 (2~12자)" 
+                           class="w-full px-4 py-3 rounded-xl bg-neutral-900 border border-neutral-700 text-amber-100 placeholder-neutral-500 text-center font-bold focus:outline-none focus:border-amber-400 transition">
+                    <p id="nickname-error" class="text-red-400 text-xs mt-2 hidden"></p>
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-black font-jua text-xl rounded-xl shadow-lg btn-press">
+                        게임 시작하기
+                    </button>
+                    <button type="button" onclick="resetNicknameData()" class="px-4 py-3.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-400 hover:text-white font-jua text-xs rounded-xl border border-neutral-700 btn-press" title="닉네임 초기화">
+                        <i class="fa-solid fa-rotate-right"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="w-full max-w-xl flex flex-col gap-3">
+
+        <!-- Top Header Bar -->
+        <header class="glass-panel rounded-2xl p-3 sm:p-4 flex justify-between items-center shadow-lg border border-amber-500/30">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-gradient-to-br from-amber-500 to-red-600 rounded-xl flex items-center justify-center text-white text-xl shadow">
+                    <i class="fa-solid fa-face-grin-tears"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-jua text-amber-400 leading-tight">wnstj 강화하기</h1>
+                    <div class="flex items-center gap-2 text-xs text-neutral-400">
+                        <span>플레이어: <strong id="player-nickname-display" class="text-amber-200">-</strong></span>
+                        <button onclick="changeNicknamePrompt()" class="text-[10px] text-amber-500 hover:underline">(변경)</button>
+                    </div>
+                </div>
+            </div>
+            <button onclick="openLeaderboard()" class="px-3 py-2 bg-neutral-800 hover:bg-neutral-700 border border-amber-500/40 text-amber-300 rounded-xl font-jua text-sm flex items-center gap-1.5 btn-press">
+                <i class="fa-solid fa-trophy text-amber-400"></i>
+                <span>명예의 전당</span>
+            </button>
+        </header>
+
+        <!-- Stats Bar -->
+        <div class="grid grid-cols-2 gap-2">
+            <div class="glass-panel p-3 rounded-2xl flex items-center justify-between border border-amber-500/20">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                        <i class="fa-solid fa-coins"></i>
+                    </div>
+                    <div>
+                        <p class="text-[10px] text-neutral-400 font-bold uppercase">보유 골드</p>
+                        <p id="gold-display" class="text-base sm:text-lg font-black text-amber-400">1,000 G</p>
+                    </div>
+                </div>
+            </div>
+            <div class="glass-panel p-3 rounded-2xl flex items-center justify-between border border-amber-500/20">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-orange-500/20 text-orange-400 flex items-center justify-center">
+                        <i class="fa-solid fa-hand-pointer"></i>
+                    </div>
+                    <div>
+                        <p class="text-[10px] text-neutral-400 font-bold uppercase">터치당 골드</p>
+                        <p id="cpc-display" class="text-base sm:text-lg font-black text-orange-400">+10 G</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Stage Screen -->
+        <main class="glass-panel rounded-3xl p-5 flex flex-col items-center justify-between min-h-[380px] relative overflow-hidden border-2 border-amber-500/30 shadow-2xl">
+            <!-- Background Glow FX -->
+            <div id="bg-glow" class="absolute w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none transition-all duration-500"></div>
+
+            <!-- Stage Header -->
+            <div class="w-full flex justify-between items-center z-10">
+                <span id="level-badge" class="px-3 py-1 bg-amber-500/20 border border-amber-400/40 text-amber-300 font-jua text-sm rounded-full">
+                    Lv. 1
+                </span>
+                <span id="success-rate-display" class="text-xs font-bold text-amber-300 bg-amber-950/60 border border-amber-500/30 px-2.5 py-1 rounded-full">
+                    강화 성공률: 100%
+                </span>
+            </div>
+
+            <!-- Character Interactive Box -->
+            <div id="character-click-area" onclick="handleCharacterClick(event)" class="relative my-3 cursor-pointer group btn-press flex flex-col items-center">
+                <!-- SVG Container -->
+                <div id="wnstj-avatar-container" class="w-48 h-48 sm:w-56 sm:h-56 flex items-center justify-center transition-transform duration-200 group-hover:scale-105">
+                    <!-- SVG Injected Dynamically -->
+                </div>
+                <div class="mt-2 text-center">
+                    <h2 id="wnstj-name" class="text-2xl font-jua text-amber-300 drop-shadow-md">동네 백수 wnstj</h2>
+                    <p id="wnstj-desc" class="text-xs text-neutral-400 mt-0.5">터치 시 골드를 획득합니다!</p>
+                </div>
+            </div>
+
+            <!-- Action Controls -->
+            <div class="w-full grid grid-cols-2 gap-3 z-10 mt-2">
+                <button id="upgrade-btn" onclick="attemptUpgrade()" class="py-3.5 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-400 text-black font-jua text-lg rounded-2xl shadow-lg border border-amber-300/50 flex flex-col items-center justify-center btn-press">
+                    <div class="flex items-center gap-1.5">
+                        <i class="fa-solid fa-arrow-up-bold"></i>
+                        <span>강화하기</span>
+                    </div>
+                    <span id="upgrade-cost-text" class="text-xs font-sans font-bold text-black/80">비용: 100 G</span>
+                </button>
+
+                <button id="sell-btn" onclick="sellBurger()" class="py-3.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-600 text-neutral-200 font-jua text-lg rounded-2xl flex flex-col items-center justify-center btn-press">
+                    <div class="flex items-center gap-1.5">
+                        <i class="fa-solid fa-sack-dollar text-amber-400"></i>
+                        <span>독립시키기</span>
+                    </div>
+                    <span id="sell-price-text" class="text-xs font-sans font-bold text-amber-400">독립 불가</span>
+                </button>
+            </div>
+        </main>
+
+        <!-- Consumable Inventory Bar (콜라만 수동 사용 / 방어막은 자동 적용) -->
+        <section class="glass-panel rounded-2xl p-3 border border-amber-500/30 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="w-7 h-7 bg-amber-500/20 text-amber-400 rounded-lg flex items-center justify-center text-xs">
+                    <i class="fa-solid fa-box-archive"></i>
+                </div>
+                <span class="text-xs font-jua text-amber-300">인벤토리 & 대기 상태</span>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <!-- Cola Slot -->
+                <div class="flex items-center gap-1 bg-neutral-900 px-2.5 py-1.5 rounded-xl border border-neutral-700">
+                    <i class="fa-solid fa-bottle-water text-red-500 text-xs"></i>
+                    <span id="inv-cola-count" class="text-xs font-bold text-amber-200">0개</span>
+                    <button onclick="useCola()" class="ml-1 px-2 py-0.5 bg-red-600 hover:bg-red-500 text-white text-[10px] font-jua rounded-lg btn-press">사용</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Active Status Display -->
+        <div id="active-status-bar" class="flex gap-2 text-xs font-jua">
+            <div id="status-cola" class="hidden flex-1 bg-red-950/80 border border-red-500/50 text-red-200 px-3 py-1.5 rounded-xl text-center animate-pulse">
+                <i class="fa-solid fa-bottle-water"></i> 스페셜 콜라 대기 중 (+10% 확정)
+            </div>
+            <div id="status-shield" class="hidden flex-1 bg-yellow-950/80 border border-yellow-500/50 text-yellow-200 px-3 py-1.5 rounded-xl text-center">
+                <i class="fa-solid fa-shield-halved"></i> 치즈 방어막 자동 대기 중 (<span id="active-shield-count">0</span>개)
+            </div>
+        </div>
+
+        <!-- Shop & Buffs Section -->
+        <section class="glass-panel rounded-3xl p-4 border border-amber-500/20">
+            <h3 class="text-base font-jua text-amber-400 mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-store"></i>
+                <span>wnstj 육성 상점</span>
+            </h3>
+            
+            <div class="grid grid-cols-2 gap-2">
+                <!-- Cola Item -->
+                <div class="bg-neutral-900/80 border border-neutral-800 p-2.5 rounded-2xl flex flex-col justify-between">
+                    <div>
+                        <span class="text-xs font-bold text-amber-200 flex items-center gap-1"><i class="fa-solid fa-bottle-water text-red-500"></i> 스페셜 콜라</span>
+                        <p class="text-[11px] text-neutral-400 mt-1">인벤토리에 보관 후 원할 때 사용 (+10%)</p>
+                    </div>
+                    <button onclick="buyItem('cola')" class="mt-2 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 font-jua text-xs rounded-xl btn-press">
+                        구매 (<span id="cola-cost">300</span>G)
+                    </button>
+                </div>
+
+                <!-- Cheese Shield Item -->
+                <div class="bg-neutral-900/80 border border-neutral-800 p-2.5 rounded-2xl flex flex-col justify-between">
+                    <div>
+                        <span class="text-xs font-bold text-orange-200 flex items-center gap-1"><i class="fa-solid fa-cheese text-yellow-400"></i> 치즈 방어막 (최고가)</span>
+                        <p class="text-[11px] text-neutral-400 mt-1">구매 시 **자동으로** 실패 방어 장전</p>
+                    </div>
+                    <button onclick="buyItem('shield')" class="mt-2 py-1.5 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/40 text-orange-300 font-jua text-xs rounded-xl btn-press">
+                        구매 (<span id="shield-cost">600</span>G)
+                    </button>
+                </div>
+
+                <!-- Drumstick Item -->
+                <div class="bg-neutral-900/80 border border-neutral-800 p-2.5 rounded-2xl flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-bold text-yellow-200 flex items-center gap-1"><i class="fa-solid fa-drumstick-bite text-amber-500"></i> 전설의 닭다리</span>
+                            <span id="spatula-level" class="text-[10px] bg-yellow-500/20 text-yellow-300 px-1.5 py-0.5 rounded font-bold">Lv.0</span>
+                        </div>
+                        <p class="text-[11px] text-neutral-400 mt-1">터치/클릭당 골드 획득량 증가</p>
+                    </div>
+                    <button onclick="buyItem('spatula')" class="mt-2 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/40 text-yellow-300 font-jua text-xs rounded-xl btn-press">
+                        구매 (<span id="spatula-cost">400</span>G)
+                    </button>
+                </div>
+
+                <!-- Night Rider Item -->
+                <div class="bg-neutral-900/80 border border-neutral-800 p-2.5 rounded-2xl flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-bold text-red-200 flex items-center gap-1"><i class="fa-solid fa-motorcycle text-orange-400"></i> 야식 배달부</span>
+                            <span id="grill-level" class="text-[10px] bg-red-500/20 text-red-300 px-1.5 py-0.5 rounded font-bold">Lv.0</span>
+                        </div>
+                        <p class="text-[11px] text-neutral-400 mt-1">1초마다 자동으로 골드 수급</p>
+                    </div>
+                    <button onclick="buyItem('grill')" class="mt-2 py-1.5 bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-300 font-jua text-xs rounded-xl btn-press">
+                        구매 (<span id="grill-cost">500</span>G)
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Leaderboard Modal -->
+    <div id="leaderboard-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 hidden">
+        <div class="glass-panel max-w-md w-full p-6 rounded-3xl border-2 border-amber-500/40 flex flex-col max-h-[85vh]">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-jua text-amber-400 flex items-center gap-2">
+                    <i class="fa-solid fa-trophy text-amber-400"></i>
+                    <span>명예의 전당 (골드 랭킹)</span>
+                </h3>
+                <button onclick="closeLeaderboard()" class="text-neutral-400 hover:text-white text-xl">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <p class="text-xs text-neutral-400 mb-3">최고 골드를 기록한 실제 플레이어들의 순위입니다.</p>
+
+            <div class="overflow-y-auto flex-1 pr-1 space-y-2" id="leaderboard-list"></div>
+
+            <button onclick="closeLeaderboard()" class="mt-4 w-full py-3 bg-neutral-800 hover:bg-neutral-700 text-amber-300 font-jua rounded-xl border border-neutral-700 btn-press">
+                닫기
+            </button>
+        </div>
+    </div>
+
+    <!-- Toast Notification Overlay -->
+    <div id="toast-container" class="fixed bottom-6 z-50 pointer-events-none flex flex-col gap-2 items-center"></div>
+
+    <script>
+        // --- 30 GOLDEN BALANCE TIERS ---
+        const TIERS = [
+            { level: 1, name: "동네 백수 wnstj", baseCost: 100, baseSell: 0, rate: 1.00, desc: "삼선슬리퍼 신고 하루종일 방구석에서 뒹굴거립니다." },
+            { level: 2, name: "라면 흡입러 wnstj", baseCost: 160, baseSell: 120, rate: 0.95, desc: "국물까지 남김없이 원샷하며 뱃살을 축적 중." },
+            { level: 3, name: "소파 고치 wnstj", baseCost: 260, baseSell: 350, rate: 0.90, desc: "소파와 살이 눌러붙어 몸이 하나가 되기 시작했습니다." },
+            { level: 4, name: "배달앱 1급 VVIP wnstj", baseCost: 400, baseSell: 750, rate: 0.85, desc: "배달기사님이 이름을 외우고 인사하는 경지." },
+            { level: 5, name: "삼겹살 포식자 wnstj", baseCost: 600, baseSell: 1800, rate: 0.80, desc: "[수익 발생!] 삼겹살을 한 입에 털어 넣는 위엄." },
+            { level: 6, name: "야식의 귀재 wnstj", baseCost: 900, baseSell: 3200, rate: 0.75, desc: "새벽 2시에 야식 시켜 먹을 때가 세상에서 제일 행복함." },
+            { level: 7, name: "단추 폭파범 wnstj", baseCost: 1350, baseSell: 5800, rate: 0.70, desc: "셔츠 단추가 미사일처럼 튕겨 나가 벽을 맞춥니다." },
+            { level: 8, name: "이중턱 마스터 wnstj", baseCost: 2000, baseSell: 9500, rate: 0.65, desc: "턱과 목의 경계선이 완벽히 사라졌습니다." },
+            { level: 9, name: "튜브 탑재자 wnstj", baseCost: 3000, baseSell: 15000, rate: 0.60, desc: "옆구리 살이 인간 튜브처럼 몸을 둘러싸고 있습니다." },
+            { level: 10, name: "지방 장수인 wnstj", baseCost: 4500, baseSell: 24000, rate: 0.55, desc: "칼바람이 불어도 반팔 하나로 버티는 완벽 보온." },
+            { level: 11, name: "장판 파괴자 wnstj", baseCost: 6500, baseSell: 38000, rate: 0.52, desc: "누우면 밑집에서 지진 난 줄 알고 올라옵니다." },
+            { level: 12, name: "체급 깡패 wnstj", baseCost: 9500, baseSell: 60000, rate: 0.50, desc: "어깨빵을 치면 상대방이 10m 튕겨 나갑니다." },
+            { level: 13, name: "피자판 샌드백 wnstj", baseCost: 14000, baseSell: 95000, rate: 0.48, desc: "라지 사이즈 피자 한 판을 접어서 만두처럼 먹음." },
+            { level: 14, name: "뚱뚱한 스파이 wnstj", baseCost: 20000, baseSell: 150000, rate: 0.45, desc: "은신을 시도해도 몸집이 커서 다 보입니다." },
+            { level: 15, name: "콜라 폭주족 wnstj", baseCost: 30000, baseSell: 230000, rate: 0.42, desc: "1.5L 제로 콜라는 물 대신 마시는 일상." },
+            { level: 16, name: "초거대 볼링공 wnstj", baseCost: 45000, baseSell: 360000, rate: 0.40, desc: "구르면 길거리의 모든 장애물을 깨부숩니다." },
+            { level: 17, name: "육중한 리더 wnstj", baseCost: 65000, baseSell: 550000, rate: 0.38, desc: "동네 백수들의 최고 존엄 수장이 되었습니다." },
+            { level: 18, name: "버거 챔피언 wnstj", baseCost: 95000, baseSell: 880000, rate: 0.35, desc: "햄버거 20개 먹기 대회 우승 트로피 수여." },
+            { level: 19, name: "중력 일그러짐 wnstj", baseCost: 140000, baseSell: 1400000, rate: 0.33, desc: "주변의 먼지와 과자 부스러기가 몸으로 쏠립니다." },
+            { level: 20, name: "우주비행사 wnstj", baseCost: 200000, baseSell: 2200000, rate: 0.30, desc: "무중력 공간에서도 무거운 체중을 자랑함." },
+            { level: 21, name: "사이버펑크 육중이 wnstj", baseCost: 300000, baseSell: 3600000, rate: 0.28, desc: "네온 사인 아래를 누비는 미래형 거구." },
+            { level: 22, name: "메카wnstj 코어", baseCost: 450000, baseSell: 5800000, rate: 0.26, desc: "거대 탑승형 탑재 슈트마저 비좁게 만듭니다." },
+            { level: 23, name: "칼로리 대마왕 wnstj", baseCost: 700000, baseSell: 9200000, rate: 0.24, desc: "온갖 악마들이 칼로리 진상을 바치며 모십니다." },
+            { level: 24, name: "스모 로드 wnstj", baseCost: 1050000, baseSell: 15000000, rate: 0.22, desc: "경기장에 서는 것만으로 압도적인 포스 발산." },
+            { level: 25, name: "고기 패티 황제 wnstj", baseCost: 1600000, baseSell: 24000000, rate: 0.20, desc: "고기 냄새만 맡아도 등급을 알아채는 신의 미각." },
+            { level: 26, name: "태산의 수호자 wnstj", baseCost: 2400000, baseSell: 40000000, rate: 0.18, desc: "움직이는 산맥이라 불리는 신화적 스케일." },
+            { level: 27, name: "행성급 덩치 wnstj", baseCost: 3600000, baseSell: 68000000, rate: 0.17, desc: "지구 자전 축에 영향을 주는 어마무시한 무게." },
+            { level: 28, name: "빅맥의 신wnstj", baseCost: 5400000, baseSell: 110000000, rate: 0.16, desc: "온 세상 햄버거의 원초적 영혼을 지배하는 존재." },
+            { level: 29, name: "빅맥 수트 마스터 wnstj", baseCost: 8000000, baseSell: 180000000, rate: 0.15, desc: "빅맥 그 자체가 되어 우주를 누비기 직전!" },
+            { level: 30, name: "★ 전설의 빅맥 wnstj ★", baseCost: 12000000, baseSell: 350000000, rate: 0.15, desc: "세계관 최강의 빅맥 wnstj!" }
+        ];
+
+        // --- GAME STATE ---
+        let gameState = {
+            nickname: "",
+            gold: 1000,
+            level: 1,
+            totalInvested: 100,
+            colaInv: 0,
+            shieldCount: 0,
+            shieldActive: 0,
+            spatulaLevel: 0,
+            grillLevel: 0,
+            isColaActive: false
+        };
+
+        // --- LOCAL STORAGE DATA (RESET VERSION) ---
+        const LEADERBOARD_KEY = "wnstj_clean_leaderboard_v2"; // 키를 변경하여 이전 랭킹 데이터 리셋
+
+        function getLocalLeaderboard() {
+            const data = localStorage.getItem(LEADERBOARD_KEY);
+            if (data) {
+                try { return JSON.parse(data); } catch(e) {}
+            }
+            return [];
+        }
+
+        function saveLocalLeaderboard(list) {
+            localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(list));
+        }
+
+        function updateMyRankingData() {
+            if (!gameState.nickname) return;
+            let list = getLocalLeaderboard();
+            let found = false;
+            for (let i = 0; i < list.length; i++) {
+                if (list[i].nickname === gameState.nickname) {
+                    if (gameState.gold > list[i].gold) {
+                        list[i].gold = gameState.gold;
+                    }
+                    if (gameState.level > (list[i].level || 1)) {
+                        list[i].level = gameState.level;
+                    }
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                list.push({ nickname: gameState.nickname, gold: gameState.gold, level: gameState.level });
+            }
+            list.sort((a, b) => b.gold - a.gold);
+            saveLocalLeaderboard(list);
+        }
+
+        // --- INITIALIZATION ---
+        window.addEventListener("DOMContentLoaded", () => {
+            const savedNick = localStorage.getItem("wnstj_current_nick");
+            if (savedNick && savedNick.trim().length >= 2) {
+                gameState.nickname = savedNick.trim();
+                document.getElementById("nickname-modal").classList.add("hidden");
+                initGame();
+            } else {
+                document.getElementById("nickname-modal").classList.remove("hidden");
+            }
+        });
+
+        function handleNicknameSubmit(e) {
+            if (e) e.preventDefault();
+            const inputEl = document.getElementById("nickname-input");
+            const errEl = document.getElementById("nickname-error");
+            const input = inputEl.value.trim();
+
+            if (input.length < 2 || input.length > 12) {
+                errEl.innerText = "닉네임은 2자 이상 12자 이하로 입력해 주세요.";
+                errEl.classList.remove("hidden");
+                return;
+            }
+
+            const list = getLocalLeaderboard();
+            const isDuplicate = list.some(item => item.nickname === input && item.nickname !== gameState.nickname);
+            
+            if (isDuplicate) {
+                errEl.innerText = "이미 존재하는 닉네임입니다. 다른 닉네임을 사용해 주세요.";
+                errEl.classList.remove("hidden");
+                return;
+            }
+
+            errEl.classList.add("hidden");
+            gameState.nickname = input;
+            localStorage.setItem("wnstj_current_nick", input);
+            document.getElementById("nickname-modal").classList.add("hidden");
+            
+            updateMyRankingData();
+            initGame();
+            showToast(`환영합니다, ${input}님!`, "success");
+        }
+
+        function changeNicknamePrompt() {
+            const current = gameState.nickname || "";
+            document.getElementById("nickname-input").value = current;
+            document.getElementById("nickname-error").classList.add("hidden");
+            document.getElementById("nickname-modal").classList.remove("hidden");
+        }
+
+        function resetNicknameData() {
+            if (confirm("저장된 닉네임 설정을 초기화하시겠습니까?")) {
+                localStorage.removeItem("wnstj_current_nick");
+                document.getElementById("nickname-input").value = "";
+                showToast("닉네임 설정이 초기화되었습니다.", "info");
+            }
+        }
+
+        function initGame() {
+            document.getElementById("player-nickname-display").innerText = gameState.nickname;
+            
+            setInterval(() => {
+                if (gameState.grillLevel > 0) {
+                    const passiveGold = gameState.grillLevel * 20 * gameState.level;
+                    addGold(passiveGold, false);
+                }
+            }, 1000);
+
+            updateUI();
+        }
+
+        // --- CORE CALCULATIONS ---
+        function getClickGold() {
+            const basePerLevel = 10 * Math.pow(1.35, gameState.level - 1);
+            const spatulaMultiplier = 1 + (gameState.spatulaLevel * 0.5);
+            return Math.floor(basePerLevel * spatulaMultiplier);
+        }
+
+        function getItemCost(type) {
+            if (type === 'cola') {
+                const totalCola = gameState.colaInv + (gameState.isColaActive ? 1 : 0);
+                return Math.floor(300 * Math.pow(1.4, totalCola));
+            }
+            if (type === 'shield') {
+                return Math.floor(600 * Math.pow(1.5, gameState.shieldCount));
+            }
+            if (type === 'spatula') return Math.floor(400 * Math.pow(1.6, gameState.spatulaLevel));
+            if (type === 'grill') return Math.floor(500 * Math.pow(1.7, gameState.grillLevel));
+            return 0;
+        }
+
+        function getCurrentSuccessRate() {
+            const currentTier = TIERS[gameState.level - 1];
+            let rate = currentTier.rate;
+            if (gameState.isColaActive) rate += 0.10;
+            return Math.min(1.0, rate);
+        }
+
+        // --- ACTIONS ---
+        function addGold(amount, showFloating = true) {
+            gameState.gold += amount;
+            updateUI();
+            updateMyRankingData();
+        }
+
+        function handleCharacterClick(e) {
+            const earned = getClickGold();
+            addGold(earned);
+
+            const rect = e.currentTarget.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            const pop = document.createElement("div");
+            pop.innerText = `+${earned.toLocaleString()}G`;
+            pop.className = "absolute text-amber-400 font-jua text-lg pointer-events-none transition-all duration-700 animate-bounce z-30";
+            pop.style.left = `${x}px`;
+            pop.style.top = `${y - 20}px`;
+            e.currentTarget.appendChild(pop);
+
+            setTimeout(() => pop.remove(), 700);
+        }
+
+        function buyItem(type) {
+            const cost = getItemCost(type);
+            if (gameState.gold < cost) {
+                showToast("골드가 부족합니다!", "error");
+                return;
+            }
+
+            gameState.gold -= cost;
+
+            if (type === 'cola') {
+                gameState.colaInv++;
+                showToast("스페셜 콜라를 인벤토리에 보관했습니다!", "success");
+            } else if (type === 'shield') {
+                gameState.shieldCount++;
+                gameState.shieldActive++;
+                showToast("치즈 방어막 구매! 자동으로 하락 방어가 장전되었습니다.", "success");
+            } else if (type === 'spatula') {
+                gameState.spatulaLevel++;
+                showToast("전설의 닭다리 강화 완료! 터치 골드가 증가합니다.", "success");
+            } else if (type === 'grill') {
+                gameState.grillLevel++;
+                showToast("야식 배달부 고용 완료! 초당 골드가 수급됩니다.", "success");
+            }
+
+            updateUI();
+            updateMyRankingData();
+        }
+
+        function useCola() {
+            if (gameState.colaInv <= 0) {
+                showToast("보유 중인 스페셜 콜라가 없습니다!", "error");
+                return;
+            }
+            if (gameState.isColaActive) {
+                showToast("이미 스페셜 콜라 효과가 대기 중입니다!", "info");
+                return;
+            }
+            gameState.colaInv--;
+            gameState.isColaActive = true;
+            showToast("스페셜 콜라 장전 완료! 다음 강화 성공률 +10% 상승!", "success");
+            updateUI();
+        }
+
+        function attemptUpgrade() {
+            if (gameState.level >= 30) {
+                showToast("이미 최고 단계인 ★ 전설의 빅맥 wnstj ★ 상태입니다!", "info");
+                return;
+            }
+
+            const currentTier = TIERS[gameState.level - 1];
+            if (gameState.gold < currentTier.baseCost) {
+                showToast("골드가 부족합니다!", "error");
+                return;
+            }
+
+            gameState.gold -= currentTier.baseCost;
+            gameState.totalInvested += currentTier.baseCost;
+
+            const finalRate = getCurrentSuccessRate();
+            const success = Math.random() < finalRate;
+
+            if (success) {
+                gameState.level++;
+                showToast(`강화 성공! [${TIERS[gameState.level - 1].name}] 달성!`, "success");
+                gameState.isColaActive = false;
+            } else {
+                if (gameState.shieldActive > 0) {
+                    gameState.shieldActive--;
+                    showToast("강화 실패! 치즈 방어막이 자동 발동하여 등급 하락을 막았습니다!", "info");
+                } else {
+                    if (gameState.level > 1) {
+                        gameState.level--;
+                        gameState.totalInvested = Math.max(100, gameState.totalInvested - currentTier.baseCost);
+                        showToast(`강화 실패... 등급이 [${TIERS[gameState.level - 1].name}]로 하락했습니다.`, "error");
+                    } else {
+                        showToast("강화 실패! (1단계는 등급이 하락하지 않습니다)", "error");
+                    }
+                }
+                gameState.isColaActive = false;
+            }
+
+            updateUI();
+            updateMyRankingData();
+        }
+
+        function sellBurger() {
+            if (gameState.level <= 1) {
+                showToast("1단계 wnstj는 독립시킬 수 없습니다!", "error");
+                return;
+            }
+
+            const currentTier = TIERS[gameState.level - 1];
+            let sellValue = currentTier.baseSell;
+            addGold(sellValue);
+            showToast(`[${currentTier.name}]를 독립시켜 ${sellValue.toLocaleString()}G를 얻었습니다!`, "success");
+
+            gameState.level = 1;
+            gameState.totalInvested = 100;
+            gameState.isColaActive = false;
+            updateUI();
+        }
+
+        // --- 30 UNIQUE SVG ILLUSTRATIONS ---
+        function renderWnstjSVG(level) {
+            if (level === 1) {
+                return `
+                <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-2xl">
+                    <ellipse cx="100" cy="140" rx="45" ry="35" fill="#15803d" />
+                    <circle cx="100" cy="85" r="38" fill="#fde047" stroke="#334155" stroke-width="4" />
+                    <ellipse cx="100" cy="115" rx="28" ry="15" fill="#fde047" stroke="#334155" stroke-width="3" />
+                    <circle cx="85" cy="80" r="4" fill="#0f172a" /><circle cx="115" cy="80" r="4" fill="#0f172a" />
+                    <path d="M 82 72 Q 88 68 92 74" stroke="#0f172a" stroke-width="3" fill="none" />
+                    <path d="M 118 72 Q 112 68 108 74" stroke="#0f172a" stroke-width="3" fill="none" />
+                    <path d="M 90 98 Q 100 92 110 98" stroke="#0f172a" stroke-width="3" fill="none" />
+                    <rect x="70" y="155" width="22" height="12" fill="#ef4444" rx="4" />
+                    <rect x="108" y="155" width="22" height="12" fill="#ef4444" rx="4" />
+                </svg>`;
+            }
+            if (level === 2) {
+                return `
+                <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-2xl">
+                    <circle cx="100" cy="100" r="50" fill="#fcd34d" stroke="#b45309" stroke-width="4" />
+                    <ellipse cx="100" cy="130" rx="35" ry="20" fill="#fcd34d" stroke="#b45309" stroke-width="3" />
+                    <ellipse cx="80" cy="95" rx="5" ry="2" fill="#000" /><ellipse cx="120" cy="95" rx="5" ry="2" fill="#000" />
+                    <path d="M 70 120 Q 100 160 130 120 Z" fill="#dc2626" stroke="#7f1d1d" stroke-width="3" />
+                    <path d="M 80 125 Q 95 140 110 122" stroke="#fef08a" stroke-width="4" fill="none" />
+                    <line x1="120" y1="100" x2="100" y2="128" stroke="#78350f" stroke-width="4" />
+                </svg>`;
+            }
+            if (level === 3) {
+                return `
+                <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-2xl">
+                    <rect x="20" y="100" width="160" height="60" rx="15" fill="#991b1b" stroke="#450a0a" stroke-width="4" />
+                    <ellipse cx="100" cy="105" rx="55" ry="35" fill="#fbbf24" stroke="#78350f" stroke-width="4" />
+                    <circle cx="70" cy="95" r="5" fill="#000" /><circle cx="100" cy="95" r="5" fill="#000" />
+                    <path d="M 75 115 Q 85 125 95 115" stroke="#78350f" stroke-width="3" fill="none" />
+                    <rect x="135" y="100" width="30" height="15" fill="#1e293b" rx="3" />
+                </svg>`;
+            }
+            if (level === 4) {
+                return `
+                <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-2xl">
+                    <rect x="40" y="80" width="120" height="90" fill="#b45309" stroke="#451a03" stroke-width="4" rx="8" />
+                    <circle cx="100" cy="70" r="40" fill="#fde047" stroke="#78350f" stroke-width="4" />
+                    <ellipse cx="100" cy="90" rx="25" ry="12" fill="#fde047" stroke="#78350f" stroke-width="3" />
+                    <circle cx="85" cy="65" r="4" fill="#000" /><circle cx="115" cy="65" r="4" fill="#000" />
+                    <path d="M 90 80 Q 100 88 110 80" stroke="#78350f" stroke-width="3" fill="none" />
+                </svg>`;
+            }
+            if (level === 5) {
+                return `
+                <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-2xl">
+                    <ellipse cx="100" cy="115" rx="55" ry="45" fill="#f59e0b" stroke="#78350f" stroke-width="4" />
+                    <circle cx="100" cy="65" r="32" fill="#fde047" stroke="#78350f" stroke-width="3" />
+                    <circle cx="90" cy="60" r="4" fill="#000" /><circle cx="110" cy="60" r="4" fill="#000" />
+                    <path d="M 95 72 L 105 72 L 100 78 Z" fill="#dc2626" />
+                    <rect x="110" y="80" width="40" height="15" fill="#fca5a5" stroke="#991b1b" stroke-width="2" rx="3" />
+                </svg>`;
+            }
+            if (level === 6) {
+                return `
+                <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-2xl">
+                    <path d="M 160 30 A 60 60 0 1 1 130 10 A 50 50 0 0 0 160 30 Z" fill="#fef08a" />
+                    <ellipse cx="100" cy="120" rx="50" ry="45" fill="#d97706" stroke="#451a03" stroke-width="4" />
+                    <circle cx="100" cy="80" r="35" fill="#fef08a" stroke="#451a03" stroke-width="3" />
+                    <line x1="85" y1="75" x2="95" y2="75" stroke="#000" stroke-width="3" />
+                    <line x1="105" y1="75" x2="115" y2="75" stroke="#000" stroke-width="3" />
+                </svg>`;
+            }
+            if (level === 7) {
+                return `
+                <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-2xl">
+                    <ellipse cx="100" cy="110" rx="58" ry="50" fill="#3b82f6" stroke="#1d4ed8" stroke-width="4" />
+                    <path d="M 100 60 L 80 110 L 120 110 Z" fill="#fde047" />
+                    <circle cx="100" cy="60" r="30" fill="#fde047" stroke="#78350f" stroke-width="3" />
+                    <circle cx="130" cy="90" r="5" fill="#f59e0b" />
+                    <line x1="110" y1="100" x2="125" y2="92" stroke="#ef4444" stroke-width="2" stroke-dasharray="2,2" />
+                </svg>`;
+            }
+            if (level === 8) {
+                return `
+                <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-2xl">
+                    <circle cx="100" cy="80" r="42" fill="#fbbf24" stroke="#78350f" stroke-width="4" />
+                    <ellipse cx="100" cy="115" rx="48" ry="18" fill="#f59e0b" stroke="#78350f" stroke-width="3" />
+                    <ellipse cx="100" cy="130" rx="55" ry="18" fill="#d97706" stroke="#78350f" stroke-width="3" />
+                    <circle cx="85" cy="75" r="4" fill="#000" /><circle cx="115" cy="75" r="4" fill="#000" />
+                </svg>`;
+            }
+            if (level === 9) {
+                return `
+                <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-2xl">
+                    <path d="M 40 130 A 60 30 0 0 0 160 130 A 60 30 0 0 0 40 130 Z" fill="#ef4444" stroke="#991b1b" stroke-width="5" />
+                    <circle cx="100" cy="85" r="40" fill="#fde047" stroke="#78350f" stroke-width="4" />
+                    <circle cx="88" cy="80" r="4" fill="#000" /><circle cx="112" cy="80" r="4" fill="#000" />
+                </svg>`;
+            }
+            if (level === 10) {
+                return `
+                <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-2xl">
+                    <path d="M 20 40 L 40 20 L 50 50 Z" fill="#93c5fd" />
+                    <path d="M 170 30 L 150 40 L 180 60 Z" fill="#93c5fd" />
+                    <ellipse cx="100" cy="115" rx="62" ry="52" fill="#f59e0b" stroke="#78350f" stroke-width="4" />
+                    <circle cx="100" cy="65" r="35" fill="#fde047" stroke="#78350f" stroke-width="3" />
+                </svg>`;
+            }
+            if (level === 11) {
+                return `
+                <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-2xl">
+                    <path d="M 30 160 L 70 140 L 100 165 L 140 145 L 170 170" stroke="#ef4444" stroke-width="5" fill="none" />
+                    <ellipse cx="100" cy="110" rx="65" ry="40" fill="#d97706" stroke="#451a03" stroke-width="4" />
+                    <circle cx="100" cy="60" r="30" fill="#fde047" stroke="#451a03" stroke-width="3" />
+                </svg>`;
+            }
+            if (level === 12) {
+                return `
+                <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-2xl">
+                    <path d="M 20 100 Q 100 50 180 100 L 160 170 L 40 170 Z" fill="#1e293b" stroke="#0f172a" stroke-width="4" />
+                    <circle cx="100" cy="65" r="28" fill="#fde047" stroke="#0f172a" stroke-width="3" />
+                </svg>`;
+            }
+            if (level === 13) {
+                return `
+                <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-2xl">
+                    <circle cx="100" cy="85" r="42" fill="#fbbf24" stroke="#78350f" stroke-width="4" />
+                    <path d="M 50 100 L 150 100 L 100 160 Z" fill="#f59e0b" stroke="#b45309" stroke-width="4" />
+                    <circle cx="85" cy="120" r="6" fill="#dc2626" />
+                    <circle cx="115" cy="125" r="6" fill="#dc2626" />
+                </svg>`;
+            }
+            if (level === 14) {
+                return `
+                <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-2xl">
+                    <ellipse cx="100" cy="120" rx="65" ry="48" fill="#0f172a" />
+                    <circle cx="100" cy="70" r="32" fill="#0f172a" />
+                    <rect x="75" y="60" width="50" height="12" fill="#fde047" rx="3" />
+                    <circle cx="90" cy="66" r="3" fill="#000" /><circle cx="110" cy="66" r="3" fill="#000" />
+                </svg>`;
+            }
+            if (level === 15) {
+                return `
+                <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-2xl">
+                    <ellipse cx="100" cy="115" rx="62" ry="52" fill="#dc2626" stroke="#7f1d1d" stroke-width="4" />
+                    <circle cx="100" cy="65" r="32" fill="#fde047" stroke="#7f1d1d" stroke-width="3" />
+                    <rect x="120" y="30" width="25" height="60" fill="#7f1d1d" rx="4" />
+                </svg>`;
+            }
+            if (level === 16) {
+                return `
+                <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-2xl">
+                    <circle cx="100" cy="100" r="75" fill="#2563eb" stroke="#1e40af" stroke-width="5" />
+                    <circle cx="70" cy="80" r="8" fill="#fde047" />
+                    <circle cx="110" cy="75" r="8" fill="#fde047" />
+                    <circle cx="90" cy="110" r="10" fill="#fde047" />
+                </svg>`;
+            }
+            if (level === 17) {
+                return `
+                <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-2xl">
+                    <path d="M 60 50 L 80 20 L 100 40 L 120 20 L 140 50 Z" fill="#eab308" stroke="#854d0e" stroke-width="3" />
+                    <ellipse cx="100" cy="120" rx="68" ry="55" fill="#d97706" stroke="#451a03" stroke-width="4" />
+                    <circle cx="100" cy="75" r="35" fill="#fde047" stroke="#451a03" stroke-width="3" />
+                </svg>`;
+            }
+            if (level === 18) {
+                return `
+                <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-2xl">
+                    <ellipse cx="100" cy="120" rx="65" ry="50" fill="#f59e0b" stroke="#78350f" stroke-width="4" />
+                    <path d="M 60 110 Q 100 90 140 110 L 140 130 L 60 130 Z" fill="#b45309" />
+                    <rect x="55" y="120" width="90" height="6" fill="#16a34a" />
+                </svg>`;
+            }
+            if (level === 19) {
+                return `
+                <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-2xl">
+                    <circle cx="100" cy="100" r="70" fill="none" stroke="#a855f7" stroke-width="6" stroke-dasharray="15,10" class="animate-spin" />
+                    <ellipse cx="100" cy="100" rx="55" ry="55" fill="#7e22ce" />
+                    <circle cx="100" cy="80" r="25" fill="#fde047" />
+                </svg>`;
+            }
+            if (level === 20) {
+                return `
+                <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-2xl">
+                    <circle cx="100" cy="100" r="72" fill="#e2e8f0" stroke="#64748b" stroke-width="5" />
+                    <circle cx="100" cy="80" r="35" fill="#0284c7" stroke="#0369a1" stroke-width="3" />
+                    <circle cx="90" cy="75" r="5" fill="#fff" opacity="0.8" />
+                </svg>`;
+            }
+            if (level === 21) {
+                return `
+                <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-2xl">
+                    <ellipse cx="100" cy="115" rx="68" ry="52" fill="#0f172a" stroke="#06b6d4" stroke-width="4" />
+                    <rect x="65" y="60" width="70" height="20" fill="#ec4899" rx="4" />
+                    <circle cx="100" cy="70" r="30" fill="none" stroke="#06b6d4" stroke-width="3" />
+                </svg>`;
+            }
+            if (level === 22) {
+                return `
+                <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-2xl">
+                    <rect x="30" y="60" width="140" height="110" fill="#475569" stroke="#0f172a" stroke-width="5" rx="15" />
+                    <circle cx="100" cy="95" r="28" fill="#fde047" />
+                    <circle cx="100" cy="135" r="12" fill="#ef4444" />
+                </svg>`;
+            }
+            if (level === 23) {
+                return `
+                <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-2xl">
+                    <path d="M 50 40 L 70 70 L 40 70 Z" fill="#ef4444" />
+                    <path d="M 150 40 L 130 70 L 160 70 Z" fill="#ef4444" />
+                    <ellipse cx="100" cy="115" rx="70" ry="55" fill="#7f1d1d" stroke="#450a0a" stroke-width="5" />
+                    <circle cx="85" cy="90" r="6" fill="#fde047" /><circle cx="115" cy="90" r="6" fill="#fde047" />
+                </svg>`;
+            }
+            if (level === 24) {
+                return `
+                <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-2xl">
+                    <circle cx="100" cy="50" r="12" fill="#000" />
+                    <ellipse cx="100" cy="120" rx="72" ry="55" fill="#fde047" stroke="#78350f" stroke-width="5" />
+                    <rect x="70" y="140" width="60" height="35" fill="#000" rx="4" />
+                </svg>`;
+            }
+            if (level === 25) {
+                return `
+                <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-2xl">
+                    <ellipse cx="100" cy="120" rx="70" ry="52" fill="#b45309" stroke="#451a03" stroke-width="5" />
+                    <path d="M 60 50 L 80 25 L 100 45 L 120 25 L 140 50 Z" fill="#ef4444" />
+                    <circle cx="100" cy="75" r="32" fill="#fde047" />
+                </svg>`;
+            }
+            if (level === 26) {
+                return `
+                <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-2xl">
+                    <polygon points="100,20 20,180 180,180" fill="#15803d" stroke="#052e16" stroke-width="5" />
+                    <circle cx="100" cy="100" r="30" fill="#fde047" />
+                </svg>`;
+            }
+            if (level === 27) {
+                return `
+                <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-2xl">
+                    <circle cx="100" cy="100" r="75" fill="#0284c7" stroke="#0369a1" stroke-width="5" />
+                    <ellipse cx="100" cy="100" rx="90" ry="20" fill="none" stroke="#eab308" stroke-width="6" transform="rotate(-15 100 100)" />
+                </svg>`;
+            }
+            if (level === 28) {
+                return `
+                <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-2xl">
+                    <circle cx="100" cy="100" r="78" fill="#eab308" stroke="#78350f" stroke-width="6" />
+                    <path d="M 40 100 Q 100 60 160 100" stroke="#78350f" stroke-width="8" fill="none" />
+                    <path d="M 40 120 Q 100 160 160 120" stroke="#16a34a" stroke-width="8" fill="none" />
+                </svg>`;
+            }
+            if (level === 29) {
+                return `
+                <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-2xl">
+                    <rect x="25" y="40" width="150" height="30" fill="#d97706" rx="10" />
+                    <rect x="20" y="75" width="160" height="15" fill="#78350f" rx="4" />
+                    <rect x="15" y="95" width="170" height="12" fill="#16a34a" rx="3" />
+                    <rect x="20" y="112" width="160" height="15" fill="#d97706" rx="4" />
+                    <rect x="25" y="132" width="150" height="30" fill="#d97706" rx="10" />
+                    <circle cx="100" cy="100" r="22" fill="#fde047" stroke="#000" stroke-width="3" />
+                </svg>`;
+            }
+            return `
+            <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-2xl">
+                <circle cx="100" cy="100" r="85" fill="#eab308" class="animate-pulse" />
+                <rect x="20" y="30" width="160" height="35" fill="#d97706" rx="12" stroke="#451a03" stroke-width="4" />
+                <circle cx="60" cy="45" r="3" fill="#fff" /><circle cx="100" cy="42" r="3" fill="#fff" /><circle cx="140" cy="45" r="3" fill="#fff" />
+                <rect x="15" y="70" width="170" height="18" fill="#78350f" rx="5" />
+                <rect x="10" y="92" width="180" height="12" fill="#16a34a" rx="4" />
+                <rect x="15" y="108" width="170" height="16" fill="#f59e0b" rx="5" />
+                <rect x="15" y="128" width="170" height="18" fill="#78350f" rx="5" />
+                <rect x="20" y="150" width="160" height="30" fill="#d97706" rx="12" stroke="#451a03" stroke-width="4" />
+                <circle cx="100" cy="100" r="28" fill="#fde047" stroke="#000" stroke-width="4" />
+                <circle cx="92" cy="95" r="4" fill="#000" /><circle cx="108" cy="95" r="4" fill="#000" />
+                <path d="M 92 108 Q 100 116 108 108" stroke="#000" stroke-width="3" fill="none" />
+            </svg>`;
+        }
+
+        // --- UPDATE UI ---
+        function updateUI() {
+            const tier = TIERS[gameState.level - 1];
+
+            document.getElementById("gold-display").innerText = `${gameState.gold.toLocaleString()} G`;
+            document.getElementById("cpc-display").innerText = `+${getClickGold().toLocaleString()} G`;
+
+            document.getElementById("level-badge").innerText = `Lv. ${tier.level}`;
+            document.getElementById("wnstj-name").innerText = tier.name;
+            document.getElementById("wnstj-desc").innerText = tier.desc;
+
+            const ratePercent = Math.round(getCurrentSuccessRate() * 100);
+            document.getElementById("success-rate-display").innerText = `강화 성공률: ${ratePercent}%`;
+
+            document.getElementById("wnstj-avatar-container").innerHTML = renderWnstjSVG(tier.level);
+            document.getElementById("upgrade-cost-text").innerText = `비용: ${tier.baseCost.toLocaleString()} G`;
+            
+            const sellBtn = document.getElementById("sell-btn");
+            const sellPriceText = document.getElementById("sell-price-text");
+            if (tier.level <= 1) {
+                sellPriceText.innerText = "독립 불가";
+                sellBtn.classList.add("opacity-50", "cursor-not-allowed");
+            } else {
+                sellPriceText.innerText = `+${tier.baseSell.toLocaleString()} G`;
+                sellBtn.classList.remove("opacity-50", "cursor-not-allowed");
+            }
+
+            document.getElementById("inv-cola-count").innerText = `${gameState.colaInv}개`;
+
+            const colaStatus = document.getElementById("status-cola");
+            if (gameState.isColaActive) colaStatus.classList.remove("hidden");
+            else colaStatus.classList.add("hidden");
+
+            const shieldStatus = document.getElementById("status-shield");
+            if (gameState.shieldActive > 0) {
+                shieldStatus.classList.remove("hidden");
+                document.getElementById("active-shield-count").innerText = gameState.shieldActive;
+            } else {
+                shieldStatus.classList.add("hidden");
+            }
+
+            document.getElementById("cola-cost").innerText = getItemCost('cola').toLocaleString();
+            document.getElementById("shield-cost").innerText = getItemCost('shield').toLocaleString();
+            document.getElementById("spatula-level").innerText = `Lv.${gameState.spatulaLevel}`;
+            document.getElementById("spatula-cost").innerText = getItemCost('spatula').toLocaleString();
+            document.getElementById("grill-level").innerText = `Lv.${gameState.grillLevel}`;
+            document.getElementById("grill-cost").innerText = getItemCost('grill').toLocaleString();
+        }
+
+        // --- LEADERBOARD MODAL ---
+        function openLeaderboard() {
+            updateMyRankingData();
+            const list = getLocalLeaderboard();
+            const container = document.getElementById("leaderboard-list");
+            container.innerHTML = "";
+
+            if (list.length === 0) {
+                container.innerHTML = `<div class="text-center py-8 text-neutral-500 font-jua text-sm">아직 등록된 플레이어가 없습니다.</div>`;
+            } else {
+                list.forEach((item, index) => {
+                    const isMe = item.nickname === gameState.nickname;
+                    const rankEl = document.createElement("div");
+                    rankEl.className = `p-3 rounded-2xl flex items-center justify-between border ${isMe ? 'bg-amber-500/20 border-amber-400' : 'bg-neutral-900/60 border-neutral-800'}`;
+                    
+                    let rankBadge = `<span class="font-bold text-sm w-6 text-neutral-400">${index + 1}</span>`;
+                    if (index === 0) rankBadge = `<span class="text-amber-400 font-bold text-base w-6"><i class="fa-solid fa-crown"></i></span>`;
+                    else if (index === 1) rankBadge = `<span class="text-slate-300 font-bold text-base w-6"><i class="fa-solid fa-medal"></i></span>`;
+                    else if (index === 2) rankBadge = `<span class="text-amber-700 font-bold text-base w-6"><i class="fa-solid fa-award"></i></span>`;
+
+                    rankEl.innerHTML = `
+                        <div class="flex items-center gap-2">
+                            ${rankBadge}
+                            <span class="font-jua text-sm ${isMe ? 'text-amber-300 font-bold' : 'text-neutral-200'}">${item.nickname} ${isMe ? '(나)' : ''}</span>
+                        </div>
+                        <span class="font-black text-xs text-amber-400">${(item.gold || 0).toLocaleString()} G (Lv.${item.level||1})</span>
+                    `;
+                    container.appendChild(rankEl);
+                });
+            }
+
+            document.getElementById("leaderboard-modal").classList.remove("hidden");
+        }
+
+        function closeLeaderboard() {
+            document.getElementById("leaderboard-modal").classList.add("hidden");
+        }
+
+        // --- TOAST NOTIFICATIONS ---
+        function showToast(msg, type = 'info') {
+            const container = document.getElementById("toast-container");
+            const toast = document.createElement("div");
+            
+            let bg = "bg-neutral-900 border-neutral-700 text-neutral-100";
+            if (type === 'success') bg = "bg-green-950 border-green-500/50 text-green-200";
+            if (type === 'error') bg = "bg-red-950 border-red-500/50 text-red-200";
+
+            toast.className = `px-4 py-2.5 rounded-2xl border text-xs font-jua shadow-2xl transition-all duration-300 transform translate-y-2 opacity-0 ${bg}`;
+            toast.innerText = msg;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove("translate-y-2", "opacity-0");
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add("opacity-0", "translate-y-2");
+                setTimeout(() => toast.remove(), 300);
+            }, 2500);
+        }
+    </script>
+</body>
+</html>

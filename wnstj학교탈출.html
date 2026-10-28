@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>wnstj의 학교탈출</title>
+<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f2efe4;--panel:#fffdf6;--ink:#1d2b24;--mute:#5d6b63;--line:#cfc9b6;--exit:#1f9d5c;--tray:#c98512;--alarm:#d23b40;--btn:#e8e3d0;--btnh:#ddd6bc}
+@media (prefers-color-scheme:dark){:root{--bg:#16241d;--panel:#1f3329;--ink:#f1efe6;--mute:#a9b8ae;--line:#3a5446;--exit:#3ddc84;--tray:#f2b84b;--alarm:#ff6b6f;--btn:#2a4337;--btnh:#34523f}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;line-height:1.7;min-height:100vh;display:flex;justify-content:center;padding:16px}
+main{width:100%;max-width:640px}
+h1{font-family:Jua,"Apple SD Gothic Neo",sans-serif;font-weight:400;font-size:28px;margin:4px 0 12px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px 10px;font-size:13px}
+.bar{height:6px;border-radius:3px;background:var(--line);margin-top:4px;overflow:hidden}
+.bar i{display:block;height:100%;transition:width .35s}
+.inv{font-size:13px;color:var(--mute);min-height:22px;margin-bottom:10px}
+.inv b{background:var(--btn);border-radius:12px;padding:1px 9px;margin-right:5px;color:var(--ink);font-weight:400;display:inline-block}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 18px 12px}
+.card.cin{padding:0;border:0;background:none}
+.place{font-family:Jua,sans-serif;font-size:20px;font-weight:400;margin:0 0 6px}
+.txt{margin:0 0 14px;white-space:pre-line}
+button.c{display:block;width:100%;text-align:left;background:var(--btn);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:11px 14px;margin:0 0 8px;font:inherit;font-size:15px;cursor:pointer}
+button.c:hover{background:var(--btnh)}
+button.c:focus-visible{outline:3px solid var(--exit);outline-offset:2px}
+button.c:disabled{opacity:.5;cursor:not-allowed}
+.end{text-align:center}
+.end .em{font-size:52px;line-height:1.2}
+.end .place{font-size:26px;color:var(--tray)}
+.dex{font-size:13px;color:var(--mute);margin:8px 0 14px}
+/* ===== 시네마틱 컷신 ===== */
+.stage{position:relative;aspect-ratio:16/9;container-type:inline-size;border-radius:12px;overflow:hidden;background:#000;color:#fff;user-select:none;touch-action:manipulation}
+.scn{position:absolute;inset:0;overflow:hidden;transition:background .8s}
+.act{position:absolute;transform:translate(-50%,-50%);line-height:1}
+.act i{display:block;font-style:normal}
+.act i.fat{transform:scaleX(1.4)}
+.act b{display:block;font-weight:400}
+.an-bob{animation:bob 1.1s ease-in-out infinite}
+.an-float{animation:float 2.4s ease-in-out infinite}
+.an-shake{animation:shk .18s linear infinite}
+.an-zoom{animation:zm 5s ease-out forwards}
+.an-pop{animation:pop .6s cubic-bezier(.2,1.6,.4,1) both}
+.an-inR{animation:inR 1.8s ease-out both}
+.an-inL{animation:inL 1.8s ease-out both}
+.an-sweep{transform-origin:50% 0;animation:sweep 2.6s ease-in-out infinite alternate}
+.an-spin{animation:spin 1.6s linear infinite}
+@keyframes bob{50%{transform:translateY(-8%)}}
+@keyframes float{50%{transform:translateY(-18%);opacity:.6}}
+@keyframes shk{0%{transform:translate(-2%,1%)}50%{transform:translate(2%,-1%)}100%{transform:translate(-2%,1%)}}
+@keyframes zm{from{transform:scale(.7)}to{transform:scale(1.25)}}
+@keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
+@keyframes inR{from{transform:translateX(-260%);opacity:0}to{transform:none;opacity:1}}
+@keyframes inL{from{transform:translateX(260%);opacity:0}to{transform:none;opacity:1}}
+@keyframes sweep{from{transform:rotate(-40deg)}to{transform:rotate(40deg)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.fx-zoom{animation:cz 7s linear forwards}
+.fx-pan{animation:cp 7s linear forwards}
+.fx-shake{animation:cs .2s linear infinite}
+@keyframes cz{from{transform:scale(1)}to{transform:scale(1.18)}}
+@keyframes cp{from{transform:translateX(3%) scale(1.08)}to{transform:translateX(-3%) scale(1.08)}}
+@keyframes cs{0%{transform:translate(-1%,.5%)}50%{transform:translate(1%,-.5%)}100%{transform:translate(-1%,.5%)}}
+.ttl{position:absolute;inset:0;display:grid;place-items:center;text-align:center;font-family:Jua,sans-serif;font-size:10cqw;animation:pop 1s both}
+.letter{position:absolute;left:0;right:0;height:11%;background:#000;z-index:3;animation:lb 1s ease-out both}
+.letter.tp{top:0}.letter.bt{bottom:0}
+@keyframes lb{from{height:0}to{height:11%}}
+.sub{position:absolute;left:6%;right:6%;bottom:13%;text-align:center;font-size:clamp(14px,3.7cqw,24px);line-height:1.5;text-shadow:0 2px 6px #000,0 0 3px #000;z-index:4}
+.hold{position:absolute;right:8px;top:8px;z-index:5;border:0;border-radius:14px;background:#0009;color:#fff;font:inherit;font-size:12px;padding:3px 12px;cursor:pointer;overflow:hidden}
+.hold i{position:absolute;left:0;top:0;bottom:0;width:0;background:#ffffff55}
+.hold.on i{width:100%;transition:width 1.2s linear}
+.hold span{position:relative}
+@media (prefers-reduced-motion:reduce){.act b,.act i,.fx-zoom,.fx-pan,.fx-shake,.ttl{animation:none!important}.bar i{transition:none}}
+</style>
+</head>
+<body>
+<main>
+<h1>wnstj의 학교탈출</h1>
+<div class="stats" id="stats"></div>
+<div class="inv" id="inv"></div>
+<div class="card" id="card"></div>
+</main>
+<script>
+const N={snack:"과자",phone:"핸드폰",coin:"동전",key:"급식실 열쇠",rope:"줄넘기",ramen:"컵라면"};
+const BG={night:"linear-gradient(#0a1020,#1c2b45)",hall:"linear-gradient(#08140f,#1f4d3a)",cafe:"linear-gradient(#3a1c0a,#d08a2c)",roof:"linear-gradient(#060a28,#33256b)",red:"linear-gradient(#2a080b,#9a2229)",dawn:"linear-gradient(#1b2a4a,#f4a65e)",gate:"linear-gradient(#090e1a,#33425f)",black:"#000",title:"#000"};
+// 컷신 샷: [배경, 자막, [[이모지,x%,y%,크기,애니메이션]...], 카메라효과]  (W = wnstj)
+const CUT={
+c1:[["night","점심시간도 아닌 자습시간. wnstj는 오늘 급식을 세 번 받았다.",[["W",50,66,24,"bob"],["💤",64,38,9,"float"]],"zoom"],
+ ["night","배가 부르니 눈꺼풀이 무거워졌다. 책상에 엎드린 지 1분…",[["W",50,66,24,"bob"],["💤",64,38,12,"float"],["💤",73,26,8,"float"]],"zoom"],
+ ["black","…그리고 두 시간 뒤.",[],""],
+ ["night","“어? 불이 꺼졌네?” 학교는 텅 비어 있고, 문은 잠겨 있었다.",[["W",40,64,24,"pop"],["🌙",82,22,10,"float"],["🔒",78,62,10,"pop"]],"pan"],
+ ["night","꼬르르르륵— 배에서 천둥소리가 났다.",[["W",50,64,26,"shake"],["💢",65,40,9,"pop"]],"shake"],
+ ["title","wnstj의 학교탈출",[],""]],
+c2:[["hall","복도는 적막했다. 비상등만 초록색으로 빛난다.",[["W",50,66,22,"inR"],["🚨",86,24,8,"bob"]],"pan"],
+ ["hall","또각, 또각. 멀리서 손전등 빛이 다가온다.",[["🔦",78,12,16,"sweep"],["👮",82,52,18,"bob"],["W",22,68,20,"bob"]],""],
+ ["hall","wnstj는 숨을 멈췄다. 배는 멈추지 않았다. 꼬르륵—",[["W",50,66,26,"shake"],["😰",64,40,9,"pop"]],"shake"]],
+c3:[["hall","어디선가 두 가지 냄새가 풍겨온다.",[["W",50,68,22,"bob"],["👃",50,34,12,"float"]],"zoom"],
+ ["hall","한쪽은 카레. 다른 한쪽은 컵라면.",[["🍛",24,46,20,"bob"],["🍜",76,46,20,"bob"],["W",50,72,18,"bob"]],""],
+ ["hall","인생 최대의 갈림길이다.",[["🍛",24,46,20,"float"],["🍜",76,46,20,"float"],["W",50,72,18,"shake"]],"zoom"]],
+c4a:[["cafe","급식실 문틈으로 카레 냄새가 얼굴을 덮쳤다.",[["🍛",50,48,30,"zoom"]],""],
+ ["cafe","wnstj의 눈에서 하트가 나왔다.",[["W",40,66,24,"bob"],["😍",52,38,9,"pop"],["👩‍🍳",78,60,20,"inL"]],""],
+ ["cafe","“어머, 또 너니? 아까 급식 세 번 받아간 애…”",[["W",30,66,22,"bob"],["👩‍🍳",72,60,24,"bob"]],"zoom"]],
+c4b:[["hall","매점 셔터가 반쯤 내려와 있다.",[["🏪",50,52,30,"zoom"]],""],
+ ["hall","그 틈 사이로 과자 산이 보인다. 손만 닿으면…",[["🍫",30,56,14,"float"],["🍪",50,46,14,"float"],["🍿",70,56,14,"float"],["W",50,76,18,"bob"]],"zoom"]],
+c8:[["night","시간이 흘렀다. 달은 어느새 높이 떠 있다.",[["🌕",78,26,14,"float"],["W",36,68,22,"bob"]],"pan"],
+ ["night","배는 아직도 고프다. 하지만 출구는 가까워지고 있다.",[["W",50,68,22,"bob"],["🚪",82,60,14,"pop"]],"zoom"]],
+c9a:[["roof","옥상 문이 끼익 열린다. 차가운 밤바람이 분다.",[["W",40,70,22,"inR"],["🌃",50,34,28,"float"]],"pan"],
+ ["roof","발밑으로 서울의 불빛이 반짝인다. wnstj는 처음으로 학교 밖의 공기를 맡았다.",[["W",40,70,22,"bob"],["🌃",50,34,28,"float"],["✨",78,20,8,"float"]],"zoom"],
+ ["roof","그리고 배가 꼬르륵 소리를 냈다. 분위기가 깨졌다.",[["W",50,66,24,"shake"],["💢",62,42,9,"pop"]],"shake"]],
+c9b:[["gate","1층 현관. 정문과 후문, 그리고 불이 켜진 경비실이 보인다.",[["🚪",22,52,20,"bob"],["🏠",50,48,16,"bob"],["🚪",78,52,20,"bob"],["W",50,76,18,"bob"]],"pan"]],
+c10c:[["gate","경비실 안에서 규칙적인 코골이가 들린다. 드르렁— 푸우—",[["😴",70,50,24,"bob"],["💤",84,30,10,"float"],["W",24,66,20,"bob"]],"zoom"],
+ ["gate","wnstj의 배 소리와 박자가 기가 막히게 맞는다.",[["😴",70,50,24,"bob"],["W",24,66,20,"shake"],["🎵",46,36,8,"float"]],"shake"]],
+e_escape:[["gate","줄넘기가 담장 위에 걸렸다. wnstj는 끙끙대며 기어올랐다.",[["🧱",60,50,40,"pop"],["W",40,64,22,"shake"],["🪢",62,30,10,"bob"]],"shake"],
+ ["gate","바지가 터질 듯 팽팽했다. 하지만 멈추지 않았다.",[["🧱",60,50,40,"none"],["W",52,40,22,"shake"]],"zoom"],
+ ["gate","쿵. 착지. 밖이다. 진짜 밖이다!",[["🌙",20,20,12,"float"],["W",50,66,26,"pop"],["💥",38,76,10,"pop"]],""],
+ ["dawn","wnstj는 전속력으로 집으로 달려갔다. 냉장고가 기다린다.",[["W",30,70,22,"inR"],["🏠",78,56,26,"bob"]],"pan"]],
+e_lady:[["gate","철컥— 정문 자물쇠가 풀렸다.",[["🔑",50,50,26,"spin"],["🔓",70,58,16,"pop"]],""],
+ ["gate","멀리서 아주머니가 손을 흔든다. “내일은 곱빼기 줄게!”",[["👩‍🍳",76,56,24,"bob"],["👋",86,40,10,"bob"],["W",28,68,22,"bob"]],"zoom"],
+ ["dawn","wnstj의 눈가가 촉촉해졌다. 급식은 의리다.",[["W",50,68,24,"bob"],["🌅",50,28,20,"float"]],"zoom"]],
+e_ramen:[["gate","후루룩. 후루룩.",[["🍜",50,52,26,"bob"],["W",28,68,20,"bob"],["👴",72,64,22,"bob"]],"zoom"],
+ ["gate","“…너, 국물 좀 아는구나.” 경비 아저씨가 씩 웃었다.",[["👴",68,60,24,"bob"],["W",30,68,20,"bob"],["✨",52,26,8,"float"]],""],
+ ["dawn","아저씨가 정문을 열어 주었다. 의리의 탈출.",[["W",30,68,22,"inR"],["🚪",74,56,22,"pop"]],"pan"]],
+e_bigmac:[["cafe","wnstj는 빈 포장지 세 개를 나란히 놓았다.",[["🍔",30,56,12,"pop"],["🍔",50,56,12,"pop"],["🍔",70,56,12,"pop"]],"zoom"],
+ ["cafe","마지막 한 입. 눈을 감고 오래 씹었다.",[["W",50,66,26,"bob"],["🍔",50,30,14,"float"]],"zoom"],
+ ["dawn","학교는 탈출하지 못했다. 하지만 빅맥 앞에서만큼은 wnstj는 자유로웠다.",[["W",50,68,24,"bob"],["🍔",72,40,12,"float"]],"zoom"]],
+e_caught:[["red","“거기 서!” 손전등 빛이 wnstj를 덮쳤다.",[["🔦",72,12,18,"sweep"],["👮",78,58,24,"zoom"],["W",26,68,22,"shake"]],"shake"],
+ ["red","반성문 3장과 교실 청소가 선고됐다.",[["📝",50,50,26,"pop"],["W",24,68,18,"bob"]],""],
+ ["red","반성문 첫 줄: ‘저는 배가 고팠습니다.’",[["📝",50,50,22,"bob"]],"zoom"]],
+e_food:[["cafe","너무 많이 먹었다. 눈꺼풀이 천근이다.",[["W",50,64,26,"bob"],["🍽️",72,66,14,"bob"],["😋",62,40,9,"float"]],"zoom"],
+ ["cafe","배가 빵빵해진 wnstj는 식판을 베개 삼아 쓰러졌다.",[["W",50,66,26,"bob"],["💤",66,34,12,"float"]],"zoom"],
+ ["dawn","아침에 출근한 아주머니가 본 것은 행복한 표정으로 자는 wnstj였다.",[["👩‍🍳",30,60,22,"bob"],["W",68,66,22,"bob"]],"pan"]],
+e_faint:[["hall","눈앞에 컵라면이 둥둥 떠다닌다.",[["🍜",30,40,14,"float"],["🍔",66,36,14,"float"],["W",50,68,24,"shake"]],"shake"],
+ ["black","wnstj는 복도 한가운데서 쓰러졌다.",[],""]],
+e_hole:[["gate","머리는 나갔다. 어깨도 나갔다.",[["🕳️",54,60,26,"pop"],["W",36,64,22,"shake"]],"shake"],
+ ["gate","배가 안 나간다. 소방차 사이렌이 가까워진다.",[["🚒",72,52,24,"inL"],["W",36,64,22,"shake"]],"zoom"]]
+};
+// 빅맥 강제 섭취 장면 (처음 들어가면 자동 발동)
+const BM={
+c5a:{h:25,r:10,l:["냉장고 구석에서 노란 봉투가 반짝였다. 그 위에 새겨진 글씨, M.","빅맥이다. wnstj의 이성: ‘안 돼, 열쇠가 먼저야.’","wnstj의 손: (이미 포장지를 벗기는 중)","우걱우걱. 순식간에 사라졌다. 아주머니가 돌아본다. “방금 무슨 소리 났는데?”"]},
+c7c:{h:25,r:15,l:["선생님 책상 위에 빅맥 세트가 놓여 있다. 아직 따뜻하다.","wnstj는 눈을 감았다. 절대 먹지 않겠다고 다짐했다.","눈을 떴다. 포장지만 남아 있었다.","범인은 wnstj였다. 증거는 입가의 소스뿐."]},
+c9a:{h:25,r:5,l:["옥상 난간 위에 빅맥이 놓여 있다. 누가 여기에 둔 걸까?","야경보다 빅맥에 더 감동하는 중이다.","wnstj는 바람을 맞으며 한 입 물었다. 눈가에 눈물이 맺혔다. 맛 때문이다."]},
+c10c:{h:25,r:20,l:["경비실 선반에 빅맥 상자가 놓여 있다.","wnstj의 다리가 자동으로 움직인다. 의지와 상관없이.","‘이건 내 몸이 아니야…’ 하면서도 이미 한 입.","경비 아저씨의 코골이가 잠깐 멈췄다가 다시 이어진다. 휴."]}
+};
+const S={
+c1:["제1장 · 3학년 2반","교실은 어둡다. 문은 잠겨 있고, 책상 위에는 먹다 만 필기 노트만 있다.\n‘일단 나가야 해. 그리고 뭐라도 먹어야 해.’",[
+ ["책상 서랍을 뒤진다","c1b"],
+ ["뒷문을 어깨로 밀어 부순다","c2",{r:10,e:-5}]]],
+c1b:["제1장 · 내 책상 서랍","유통기한 지난 과자, 배터리 12%짜리 핸드폰, 동전 몇 개가 나왔다.",[
+ ["전부 챙긴다","c2",{g:["snack","phone","coin"]}],
+ ["과자는 지금 먹고, 나머지만 챙긴다","c2",{g:["phone","coin"],h:-20}]]],
+c2:["제2장 · 순찰하는 복도","구두 소리가 점점 가까워진다. 손전등 빛이 벽을 훑고 지나간다. 어떻게든 이 복도를 지나가야 한다.",[
+ ["청소도구함에 숨는다","c3",{p:.6,f:"e_caught",r:-5}],
+ ["과자를 건넨다 (뇌물)","c3",{n:"snack",u:"snack",r:-25}],
+ ["전력질주로 도망간다","c3",{e:-20,r:20}]]],
+c3:["제3장 · 갈림길","순찰을 따돌렸다. 숨을 돌리는데 코가 먼저 반응한다. 급식실에서는 카레 냄새가, 매점에서는 컵라면 냄새가 흘러나온다.",[
+ ["카레 냄새를 따라 급식실로 간다","c4a"],
+ ["컵라면 냄새를 따라 매점으로 간다","c4b"]]],
+c4a:["제4장 · 급식실 앞","아주머니가 냉장고 정리를 도와주면 정문 열쇠를 주겠다고 한다. 이 학교에 열쇠를 가진 사람이 있었다니.",[
+ ["도와드린다","c5a"],
+ ["…아니다, 매점으로 간다","c4b"]]],
+c5a:["제4장 · 급식실 냉장고","아주머니가 내미는 열쇠가 반짝인다. 솥에는 카레가 아직 따뜻하게 남아 있다.",[
+ ["열쇠를 받고 카레밥도 한 그릇 먹는다","c6",{g:"key",h:-25,e:15}],
+ ["열쇠만 받고 서둘러 나간다","c6",{g:"key"}]]],
+c4b:["제4장 · 매점","셔터를 들어 올리면 들어갈 수 있다. 자판기도 윙 소리를 내고 있다.",[
+ ["셔터를 들고 매점으로 들어간다","c5b",{e:-15,r:15}],
+ ["자판기를 흔들어 본다","c5b",{r:25,h:-15}]]],
+c5b:["제4장 · 매점 안","컵라면, 프로틴바, 초코우유가 줄지어 있다. 지금 이 순간 wnstj에게 천국은 여기다.",[
+ ["컵라면을 챙기고 초코우유를 마신다","c6",{g:"ramen",h:-15,e:10}],
+ ["프로틴바를 몇 개 먹어치운다","c6",{h:-30,e:20}]]],
+c6:["제5장 · 계단 앞","어느 정도 힘이 났다. 계단 앞에서 세 갈래 길이 보인다. 과학실, 체육관, 교무실.",[
+ ["과학실로 간다","c7a"],
+ ["체육관으로 간다","c7b"],
+ ["교무실 문틈을 본다","c7c"]]],
+c7a:["제5장 · 과학실","인체모형과 눈이 마주쳐서 심장이 쿵 내려앉았다. 선반에는 줄넘기 뭉치와 가스버너가 놓여 있다.",[
+ ["줄넘기를 챙긴다","c8",{g:"rope"}],
+ ["줄넘기를 챙기고 가스버너로 컵라면도 끓여 먹는다","c8",{g:"rope",n:"ramen",u:"ramen",h:-35,e:15,r:10}]]],
+c7b:["제5장 · 체육관","농구공이 굴러온다. 구석에는 매트가 깔려 있고, 체육 선생님의 간식함이 보인다.",[
+ ["매트에서 스트레칭한다","c8",{e:30,h:6}],
+ ["간식함을 몰래 턴다","c8",{h:-25,e:15,r:15}]]],
+c7c:["제5장 · 교무실","시계 초침 소리가 유난히 크게 들린다. 누군가 두고 간 간식 상자와 푹신한 의자가 있다.",[
+ ["책상 위 간식을 챙긴다","c8",{g:"snack",r:10}],
+ ["선생님 의자에서 잠깐 쉰다","c8",{e:20,r:20}]]],
+c8:["제6장 · 마지막 계단","출구가 멀지 않다. 위로 올라가면 옥상, 아래로 내려가면 현관이다.",[
+ ["옥상으로 올라간다","c9a"],
+ ["1층 현관으로 내려간다","c9b"]]],
+c9a:["제6장 · 옥상","별이 쏟아질 것 같은 밤하늘이다. 시원한 바람에 땀이 식는다.",[
+ ["난간에서 야경을 보며 쉰다","c9b",{e:20}],
+ ["바로 내려간다","c9b"]]],
+c9b:["제7장 · 1층 현관","정문, 후문, 그리고 불이 켜진 경비실. 이제 정말 마지막이다. 어디로 갈까?",[
+ ["정문으로 간다","c10a"],
+ ["후문으로 간다","c10b"],
+ ["경비실을 들여다본다","c10c"]]],
+c10a:["제7장 · 정문","묵직한 자물쇠가 걸려 있다.",[
+ ["급식실 열쇠로 연다","e_lady",{n:"key"}],
+ ["돌아간다","c9b"]]],
+c10b:["제7장 · 후문","담장은 높다. 담장 아래에는 작은 개구멍이 뚫려 있다.",[
+ ["줄넘기를 던져 담장을 넘는다","e_escape",{n:"rope",m:50,f:"e_caught"}],
+ ["개구멍으로 기어 나간다","e_hole"],
+ ["돌아간다","c9b"]]],
+c10c:["제7장 · 경비실","경비 아저씨가 의자에서 자고 있다. 책상 위에는 전기포트가 놓여 있다.",[
+ ["컵라면에 물을 부어 같이 먹는다","e_ramen",{n:"ramen"}],
+ ["아저씨를 깨운다","e_caught"],
+ ["물러난다","c9b"]]]
+};
+const E={
+e_escape:["🏃","진짜 탈출 엔딩","줄넘기로 담장을 넘어 학교탈출 성공! 집 냉장고까지 전속력으로 달렸다."],
+e_lady:["🍚","아주머니의 은혜 엔딩","열쇠로 정문을 열고 당당하게 탈출했다. 다음 날 급식실에서 아주머니가 밥을 곱빼기로 퍼 줬다."],
+e_ramen:["🍜","라면 동맹 엔딩","경비 아저씨와 라면을 나눠 먹고 정문을 열어 받았다. 아저씨의 마지막 한마디. “다음엔 김치도 가져와라.”"],
+e_bigmac:["🍔","빅맥 대장 엔딩 (히든)","빅맥을 세 개나 해치운 wnstj. 소문은 학교 전체로 퍼졌고, 다음 달부터 급식 메뉴에 ‘빅맥데이’가 생겼다."],
+e_caught:["👮","당직 선생님 엔딩","걸렸다. 반성문 3장과 교실 청소가 선고됐다."],
+e_food:["😴","먹방 엔딩","너무 많이 먹어서 그 자리에서 잠들었다. 행복했으니 괜찮다."],
+e_faint:["😵","기절 엔딩","허기와 피로를 이기지 못하고 복도에 쓰러졌다. 아침에 발견됐을 때 손에는 빈 과자 봉지가 쥐어져 있었다."],
+e_hole:["🕳️","개구멍 엔딩","머리는 나갔다. 어깨도 나갔다. 배가 안 나간다. 오늘의 교훈: 개구멍은 구멍의 크기를 먼저 보라는 뜻이다."]
+};
+const W="🧑‍🎓";
+let st,found=new Set(),seenIntro=false,stop=null;
+try{JSON.parse(localStorage.getItem("wnstjDex")||"[]").forEach(k=>found.add(k))}catch(e){}
+const $=id=>document.getElementById(id);
+const cl=v=>Math.max(0,Math.min(100,v));
+const reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion:reduce)").matches;
+
+function start(){
+ st={e:100,h:45+Math.floor(Math.random()*16),r:0,f:{},bm:0};
+ bars();
+ if(seenIntro)return show("c1");
+ seenIntro=true;
+ cut(CUT.c1,()=>show("c1"));
+}
+function bars(){
+ const d=[["체력",st.e,"var(--exit)"],["허기",st.h,"var(--tray)"],["위험",st.r,"var(--alarm)"]];
+ $("stats").innerHTML=d.map(a=>`<div class="stat">${a[0]} ${a[1]}<div class="bar"><i style="width:${a[1]}%;background:${a[2]}"></i></div></div>`).join("");
+ const it=Object.keys(N).filter(k=>st.f[k]);
+ $("inv").innerHTML=it.length?"소지품 "+it.map(k=>`<b>${N[k]}</b>`).join(""):"소지품 없음";
+}
+// ===== 시네마틱 컷신 엔진: 자동 재생, 클릭해도 넘어가지 않음. 우상단 버튼을 1.2초 꾹 눌러야 건너뜀 =====
+function cut(shots,done){
+ if(stop)stop();
+ const card=$("card");card.className="card cin";
+ card.innerHTML=`<div class="stage"><div class="scn" id="scn"></div><div class="letter tp"></div><div class="letter bt"></div><div class="sub" id="sub"></div><button class="hold" id="hold" aria-label="1.2초 꾹 눌러 컷신 건너뛰기"><i></i><span>꾹 눌러 건너뛰기</span></button></div>`;
+ const scn=$("scn"),sub=$("sub"),hold=$("hold");
+ let i=0,fin=false,tm=null,ty=null,hd=null;
+ const end=()=>{if(fin)return;fin=true;clearTimeout(tm);clearInterval(ty);clearTimeout(hd);stop=null;card.className="card";done()};
+ stop=()=>{fin=true;clearTimeout(tm);clearInterval(ty);clearTimeout(hd);stop=null};
+ const down=()=>{if(hd)return;hold.classList.add("on");hd=setTimeout(end,1200)};
+ const up=()=>{clearTimeout(hd);hd=null;hold.classList.remove("on")};
+ hold.addEventListener("pointerdown",down);
+ ["pointerup","pointerleave","pointercancel","blur"].forEach(n=>hold.addEventListener(n,up));
+ hold.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&!e.repeat)down()});
+ hold.addEventListener("keyup",up);
+ const next=()=>{
+  if(i>=shots.length){tm=setTimeout(end,700);return}
+  const [bg,txt,acts,fx]=shots[i++];
+  scn.className="scn";void scn.offsetWidth;
+  scn.style.background=BG[bg]||bg;
+  scn.className="scn"+(fx?" fx-"+fx:"");
+  if(bg==="title"){scn.innerHTML=`<div class="ttl">${txt}</div>`;sub.textContent="";tm=setTimeout(next,3200);return}
+  scn.innerHTML=acts.map(a=>{
+   const w=a[0]==="W";
+   return `<span class="act" style="left:${a[1]}%;top:${a[2]}%;font-size:${a[3]}cqw"><i class="${w?"fat":""}"><b class="an-${a[4]}">${w?W:a[0]}</b></i></span>`;
+  }).join("");
+  clearInterval(ty);
+  if(reduce){sub.textContent=txt}
+  else{let n=0;sub.textContent="";ty=setInterval(()=>{n++;sub.textContent=txt.slice(0,n);if(n>=txt.length)clearInterval(ty)},48)}
+  tm=setTimeout(next,Math.max(2600,txt.length*48+1700));
+ };
+ next();
+}
+function bmShots(l){
+ const a=[["cafe",l[0],[["🍔",50,50,30,"zoom"]],"zoom"]];
+ l.slice(1,-1).forEach(t=>a.push(["cafe",t,[["W",36,66,24,"shake"],["🍔",66,56,14,"bob"]],"shake"]));
+ a.push(["cafe",l[l.length-1],[["W",50,66,26,"bob"],["💨",70,42,10,"float"],["😋",58,36,9,"pop"]],"zoom"]);
+ return a;
+}
+function route(to){
+ if(!E[to]){
+  if(st.h>=100||st.e<=0)to="e_faint";
+  else if(st.r>=100)to="e_caught";
+  else if(st.h<=0)to="e_food";
+ }
+ show(to);
+}
+function show(id){
+ bars();
+ if(E[id])return cut(CUT[id]||[],()=>endCard(id));
+ const b=BM[id];
+ if(b&&!st.f["bm_"+id]){
+  st.f["bm_"+id]=1;st.bm++;
+  st.h=cl(st.h-b.h);st.e=cl(st.e+10);st.r=cl(st.r+b.r);bars();
+  return cut(bmShots(b.l),()=>{if(st.bm>=3)show("e_bigmac");else route(id)});
+ }
+ if(CUT[id]&&!st.f["c_"+id]){st.f["c_"+id]=1;return cut(CUT[id],()=>show(id))}
+ render(id);
+}
+function endCard(id){
+ found.add(id);
+ try{localStorage.setItem("wnstjDex",JSON.stringify([...found]))}catch(e){}
+ const x=E[id],c=$("card");
+ c.innerHTML=`<div class="end"><div class="em">${x[0]}</div><h2 class="place">${x[1]}</h2><p class="txt">${x[2]}</p><div class="dex">엔딩 도감 ${found.size} / ${Object.keys(E).length}</div><button class="c" id="again">처음부터 다시 도전</button></div>`;
+ $("again").onclick=start;
+}
+function render(id){
+ bars();
+ const s=S[id],c=$("card");
+ c.innerHTML=`<h2 class="place">${s[0]}</h2><p class="txt">${s[1]}</p><div id="ch"></div>`;
+ s[2].forEach(ch=>{
+  const o=ch[2]||{};
+  const lock=o.n&&!st.f[o.n];
+  const b=document.createElement("button");
+  b.className="c";
+  b.textContent=lock?`🔒 ${ch[0]} (필요: ${N[o.n]})`:ch[0];
+  b.disabled=!!lock;
+  b.onclick=()=>pick(ch);
+  $("ch").appendChild(b);
+ });
+}
+function pick(ch){
+ const o=ch[2]||{};let to=ch[1];
+ st.e=cl(st.e+(o.e||0));st.h=cl(st.h+(o.h||0)+3);st.r=cl(st.r+(o.r||0));
+ const fail=(o.p&&Math.random()>o.p)||(o.m&&st.e<o.m);
+ if(fail)to=o.f;
+ else{if(o.u)delete st.f[o.u];[].concat(o.g||[]).forEach(k=>st.f[k]=1)}
+ route(to);
+}
+start();
+</script>
+</body>
+</html>

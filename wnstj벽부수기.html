@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>wnstj 고기버거 먹방 - 스킬 & 혜자 패치</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background: #111827;
+            color: #fff;
+            font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 950px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        header {
+            width: 100%;
+            padding: 12px 20px;
+            background: #1f2937;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid #ef4444;
+        }
+        .stat-box {
+            font-size: 1.1rem;
+            font-weight: bold;
+            background: rgba(255,255,255,0.08);
+            padding: 6px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+        
+        /* 스킬 바 */
+        #skill-bar {
+            width: 100%;
+            background: #111827;
+            padding: 10px 15px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+            border-bottom: 2px solid #374151;
+            flex-wrap: wrap;
+        }
+        .skill-btn {
+            background: #374151;
+            color: white;
+            border: 2px solid #4b5563;
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .skill-btn:hover:not(:disabled) {
+            background: #4f46e5;
+            border-color: #818cf8;
+            transform: translateY(-2px);
+        }
+        .skill-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .book-btn {
+            background: #059669 !important;
+            border-color: #10b981 !important;
+        }
+        .book-btn:hover {
+            background: #10b981 !important;
+        }
+
+        canvas {
+            background: linear-gradient(to bottom, #0f172a, #1e293b);
+            border-bottom: 4px solid #ef4444;
+            cursor: pointer;
+        }
+        #ui-panel {
+            width: 100%;
+            background: #0f172a;
+            padding: 15px;
+        }
+        #unit-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+            gap: 10px;
+            max-height: 250px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+        .unit-card {
+            background: #1e293b;
+            border: 2px solid #334155;
+            border-radius: 10px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .unit-card:hover {
+            border-color: #f59e0b;
+            transform: translateY(-2px);
+        }
+        .unit-card:active {
+            transform: translateY(0);
+        }
+        .unit-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #3730a3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+        .unit-info {
+            flex: 1;
+        }
+        .unit-name {
+            font-weight: bold;
+            font-size: 0.95rem;
+        }
+        .unit-count {
+            color: #34d399;
+            font-size: 0.85rem;
+        }
+        .unit-cost {
+            color: #fbbf24;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+        #unit-grid::-webkit-scrollbar, .book-modal-content::-webkit-scrollbar {
+            width: 6px;
+        }
+        #unit-grid::-webkit-scrollbar-thumb, .book-modal-content::-webkit-scrollbar-thumb {
+            background: #ef4444;
+            border-radius: 3px;
+        }
+
+        /* 도감 모달 스타일 */
+        #book-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.75);
+            z-index: 999;
+            justify-content: center;
+            align-items: center;
+        }
+        .book-modal-content {
+            background: #1e293b;
+            border: 2px solid #10b981;
+            width: 90%;
+            max-width: 650px;
+            max-height: 80vh;
+            border-radius: 16px;
+            padding: 20px;
+            overflow-y: auto;
+            position: relative;
+        }
+        .close-book {
+            position: absolute;
+            top: 15px; right: 15px;
+            background: #ef4444;
+            color: #fff;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .book-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: #0f172a;
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #334155;
+        }
+        .book-icon {
+            font-size: 2rem;
+            width: 50px; height: 50px;
+            background: #3730a3;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .book-desc {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <header>
+        <div class="stat-box">STAGE: <span id="stage-txt" style="color:#ef4444">1 / 30</span></div>
+        <div class="stat-box">골드: <span id="gold-txt" style="color:#fbbf24">0</span> G</div>
+        <div class="stat-box">wnstj: <span id="count-txt" style="color:#34d399">0</span> 명</div>
+    </header>
+
+    <!-- 스킬 패널 & 도감 버튼 -->
+    <div id="skill-bar">
+        <button class="skill-btn" id="skill1" onclick="useSkill(1)">🍔 빅맥 폭격 소환</button>
+        <button class="skill-btn" id="skill2" onclick="useSkill(2)">🥤 탄산 소화제</button>
+        <button class="skill-btn" id="skill3" onclick="useSkill(3)">💰 긴급 지원금</button>
+        <button class="skill-btn book-btn" onclick="openBook()">📖 wnstj 도감</button>
+    </div>
+
+    <canvas id="canvas" width="900" height="420"></canvas>
+
+    <div id="ui-panel">
+        <div id="unit-grid"></div>
+    </div>
+</div>
+
+<!-- 도감 모달 -->
+<div id="book-modal">
+    <div class="book-modal-content">
+        <button class="close-book" onclick="closeBook()">닫기 ✖</button>
+        <h2 style="color:#10b981; margin-bottom: 15px;">📖 wnstj 도감</h2>
+        <div id="book-list"></div>
+    </div>
+</div>
+
+<script>
+// --- 효과음 ---
+const AudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playSound(type) {
+    if (AudioCtx.state === 'suspended') AudioCtx.resume();
+    const osc = AudioCtx.createOscillator();
+    const gain = AudioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(AudioCtx.destination);
+
+    if (type === 'bite') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(220, AudioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(100, AudioCtx.currentTime + 0.12);
+        gain.gain.setValueAtTime(0.3, AudioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, AudioCtx.currentTime + 0.12);
+        osc.start();
+        osc.stop(AudioCtx.currentTime + 0.12);
+    } else if (type === 'clear') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(300, AudioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(600, AudioCtx.currentTime + 0.3);
+        gain.gain.setValueAtTime(0.4, AudioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, AudioCtx.currentTime + 0.3);
+        osc.start();
+        osc.stop(AudioCtx.currentTime + 0.3);
+    } else if (type === 'skill') {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(400, AudioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(800, AudioCtx.currentTime + 0.2);
+        gain.gain.setValueAtTime(0.3, AudioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, AudioCtx.currentTime + 0.2);
+        osc.start();
+        osc.stop(AudioCtx.currentTime + 0.2);
+    }
+}
+
+// --- 게임 기본 설정 ---
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+let gold = 15000;
+let currentStage = 1;
+const MAX_STAGE = 30;
+
+// 스킬 고정 가격 설정
+const BIGMAC_BOMB_COST = 15000; // 빅맥 폭격 고정 가격 (15,000 G)
+const SODA_BUFF_COST = 1000;    // 탄산 소화제 고정 가격 (1,000 G)
+
+// wnstj 유닛 데이터
+const EATER_TYPES = [
+    { id: 0, name: '입문 wnstj', icon: '🍴', cost: 10, dmg: 5, spd: 0.8, range: 45, color: '#f59e0b', desc: '갓 입문한 초보 wnstj입니다. 작은 입으로 야금야금 먹어칩니다.' },
+    { id: 1, name: '포크 wnstj', icon: '🍴', cost: 30, dmg: 15, spd: 0.9, range: 50, color: '#ef4444', desc: '손 대신 포크를 사용해 조금 더 빠른 스피드로 버거를 공략합니다.' },
+    { id: 2, name: '케첩 wnstj', icon: '🍾', cost: 80, dmg: 40, spd: 1.0, range: 60, color: '#ec4899', desc: '케첩을 잔뜩 뿌려 버거의 풍미와 식욕을 돋우는 스페셜리스트입니다.' },
+    { id: 3, name: '콜라 wnstj', icon: '🥤', cost: 200, dmg: 100, spd: 1.1, range: 70, color: '#8b5cf6', desc: '탄산 음료를 벌컥벌컥 마시며 가뿐하게 소화해내는 능력을 가졌습니다.' },
+    { id: 4, name: '감튀 wnstj', icon: '🍟', cost: 500, dmg: 260, spd: 0.9, range: 65, color: '#10b981', desc: '감자튀김을 버거 사이에 얹어 두툼한 고기 파워를 끌어올립니다.' },
+    { id: 5, name: '나이프 wnstj', icon: '🔪', cost: 1200, dmg: 650, spd: 1.0, range: 55, color: '#06b6d4', desc: '날카로운 나이프로 버거를 잘라 효율적으로 섭취합니다.' },
+    { id: 6, name: '양손 wnstj', icon: '🍔', cost: 3000, dmg: 1600, spd: 0.8, range: 50, color: '#f97316', desc: '양손에 버거를 들고 묵직한 한 방을 날리는 파워형 wnstj입니다.' },
+    { id: 7, name: '마이크 wnstj', icon: '🎙️', cost: 8000, dmg: 4500, spd: 1.2, range: 120, color: '#a855f7', desc: '리얼한 먹방 사운드로 시청자 지원을 받아 폭발적인 딜을 넣습니다.' },
+    { id: 8, name: '트레이 wnstj', icon: '🍱', cost: 20000, dmg: 12000, spd: 0.7, range: 55, color: '#64748b', desc: '쟁반째 버거를 들고 다니며 끊임없이 삼켜버리는 진정한 대식가입니다.' },
+    { id: 9, name: '대식가 wnstj', icon: '👑', cost: 50000, dmg: 32000, spd: 0.9, range: 60, color: '#eab308', desc: '왕관을 쓴 wnstj의 왕. 버거 하나쯤은 단 몇 초 만에 없앱니다.' },
+    { id: 10, name: '거구 wnstj', icon: '🗿', cost: 120000, dmg: 80000, spd: 0.6, range: 75, color: '#475569', desc: '거대한 체구에서 나오는 파괴적인 흡입력을 자랑합니다.' },
+    { id: 11, name: '전설의 wnstj', icon: '🐲', cost: 300000, dmg: 220000, spd: 1.1, range: 85, color: '#f43f5e', desc: '버거계의 세계를 삼켜버린 신화 속 전설의 wnstj입니다.' }
+];
+
+let unitCounts = new Array(EATER_TYPES.length).fill(0);
+
+// 고기버거 30단계
+const MEAT_BURGER_NAMES = [
+    "1. 미니 싱글 고기버거", "2. 더블 패티 고기버거", "3. 불고기 고기버거", "4. 클래식 미트버거", "5. 스모크 바베큐 고기버거",
+    "6. 베이컨 더블 고기버거", "7. 트리플 패티버거", "8. 쿼터파운더 고기버거", "9. 갈릭 스테이크버거", "10. 육즙 폭발 고기버거",
+    "11. 빅맥 (Big Mac)", "12. 몬스터 패티 고기버거", "13. 수제 칠리 미트버거", "14. 콰트로 패티 고기버거", "15. 치즈 폭탄 고기버거",
+    "16. 텍사스 BBQ 고기버거", "17. 더블 빅맥 (Double Mac)", "18. 안거스 스테이크버거", "19. 킹 사이즈 미트버거", "20. 거대 고기타워 버거",
+    "21. 빅맥 DX (Big Mac DX)", "22. 패티 6장 폭주버거", "23. 울트라 바베큐버거", "24. 메가 고기 폭탄버거", "25. 기가 패티 타워", "26. 초거대 고기 몬스터", "27. 월드 클래스 미트버거", "28. 전설의 10층 고기버거", "29. 코스믹 빅맥 (Cosmic Mac)", "30. 신화의 황금 고기버거"
+];
+
+// 햄버거 객체 (피통에 비례해 크기 감소)
+class MeatBurgerWall {
+    constructor(stage) {
+        this.stage = stage;
+        this.name = MEAT_BURGER_NAMES[stage - 1] || `고기버거 Stage ${stage}`;
+        this.maxHp = Math.floor(150 * Math.pow(1.85, stage - 1));
+        this.hp = this.maxHp;
+        
+        this.baseWidth = 190;
+        this.baseHeight = 250;
+        this.fixedX = 620;
+        this.fixedY = 380;
+        this.bites = [];
+    }
+
+    addBite(hitX, hitY) {
+        const r = Math.random() * 6 + 8;
+        this.bites.push({ x: hitX, y: hitY, r: r });
+        if (this.bites.length > 50) this.bites.shift();
+    }
+
+    draw(ctx) {
+        const hpPercent = Math.max(0, this.hp / this.maxHp);
+        if (hpPercent <= 0) return;
+
+        const currentW = this.baseWidth * (0.35 + 0.65 * hpPercent);
+        const currentH = this.baseHeight * (0.35 + 0.65 * hpPercent);
+
+        const drawX = this.fixedX - currentW / 2;
+        const drawY = this.fixedY - currentH;
+
+        ctx.save();
+
+        const layers = 6;
+        const layerH = currentH / layers;
+
+        for (let i = 0; i < layers; i++) {
+            let ly = drawY + i * layerH;
+            if (i === 0) {
+                ctx.fillStyle = '#b45309';
+                ctx.beginPath();
+                ctx.roundRect(drawX, ly, currentW, layerH + 4, [16, 16, 0, 0]);
+                ctx.fill();
+                ctx.fillStyle = '#fef08a';
+                for(let s=0; s<currentW/20; s++) {
+                    ctx.beginPath();
+                    ctx.arc(drawX + 10 + s*20, ly + 6, 1.5, 0, Math.PI*2);
+                    ctx.fill();
+                }
+            } else if (i === layers - 1) {
+                ctx.fillStyle = '#d97706';
+                ctx.beginPath();
+                ctx.roundRect(drawX, ly, currentW, layerH, [0, 0, 12, 12]);
+                ctx.fill();
+            } else {
+                ctx.fillStyle = '#451a03';
+                ctx.fillRect(drawX - 4, ly, currentW + 8, layerH);
+                ctx.fillStyle = '#f59e0b';
+                ctx.fillRect(drawX - 2, ly + layerH - 2, currentW + 4, 3);
+            }
+        }
+
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.fillStyle = '#000';
+        for (let bite of this.bites) {
+            ctx.beginPath();
+            ctx.arc(bite.x, bite.y, bite.r, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.globalCompositeOperation = 'source-over';
+
+        // 체력바
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        ctx.fillRect(drawX, drawY - 25, currentW, 12);
+        ctx.fillStyle = hpPercent > 0.5 ? '#10b981' : (hpPercent > 0.2 ? '#f59e0b' : '#ef4444');
+        ctx.fillRect(drawX + 1, drawY - 24, (currentW - 2) * hpPercent, 10);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 15px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`${this.name}`, this.fixedX, drawY - 32);
+
+        ctx.restore();
+    }
+}
+
+let wall = new MeatBurgerWall(currentStage);
+let eaters = [];
+let singleEaters = [];
+let particles = [];
+let floatingTexts = [];
+
+// 클릭 시 1.25배 가속 타이머
+let clickBoostTimer = 0;
+// 스킬 2: 탄산 음료 속도 버프 타이머
+let sodaBuffTimer = 0;
+
+// 스킬 쿨타임 변수
+let skill1Cd = 0;
+let skill2Cd = 0;
+let hasUsedGrant = false;
+
+// --- 일반 지속형 wnstj 클래스 ---
+class Eater {
+    constructor(typeObj) {
+        this.type = typeObj;
+        this.x = -20 - Math.random() * 30;
+        this.y = 380 - Math.random() * 80;
+        this.size = 18;
+        this.baseSpeed = typeObj.spd * 0.45;
+        this.damage = typeObj.dmg;
+        this.range = typeObj.range;
+        this.chewTimer = 0;
+        this.isChewing = false;
+        this.animFrame = Math.random() * 100;
+    }
+
+    update() {
+        this.animFrame += 0.05;
+        
+        let speedMultiplier = 1.0;
+        if (sodaBuffTimer > 0) speedMultiplier *= 2.0;
+        if (clickBoostTimer > 0) speedMultiplier *= 1.25;
+
+        const currentSpeed = this.baseSpeed * speedMultiplier;
+        
+        const hpPercent = Math.max(0, wall.hp / wall.maxHp);
+        const currentW = wall.baseWidth * (0.35 + 0.65 * hpPercent);
+        const targetX = wall.fixedX - (currentW * 0.5) - this.range + (Math.random() * 10);
+
+        if (this.x < targetX) {
+            this.x += currentSpeed;
+            this.isChewing = false;
+        } else {
+            if (this.x > targetX + 15) {
+                this.x -= currentSpeed * 0.5;
+            }
+            this.isChewing = true;
+            this.chewTimer += 0.02 * speedMultiplier;
+
+            if (this.chewTimer >= 1.0) {
+                this.munch();
+                this.chewTimer = 0;
+            }
+        }
+    }
+
+    munch() {
+        if (wall.hp <= 0) return;
+
+        const hpPercent = Math.max(0, wall.hp / wall.maxHp);
+        const currentW = wall.baseWidth * (0.35 + 0.65 * hpPercent);
+        const currentH = wall.baseHeight * (0.35 + 0.65 * hpPercent);
+
+        const hitX = wall.fixedX - (currentW * 0.3) + (Math.random() * 20);
+        const hitY = wall.fixedY - (currentH * 0.7 * Math.random());
+
+        wall.hp -= this.damage;
+        wall.addBite(hitX, hitY);
+
+        const earnedGold = Math.max(1, Math.floor(this.damage * 0.4));
+        gold += earnedGold;
+
+        createCrumbs(hitX, hitY);
+        createFloatingText(`-${Math.floor(this.damage)}`, hitX, hitY - 10, '#ef4444');
+        playSound('bite');
+
+        if (wall.hp <= 0) {
+            nextStage();
+        }
+    }
+
+    draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+
+        const bounce = Math.sin(this.animFrame * 3) * 2;
+
+        ctx.fillStyle = 'rgba(0,0,0,0.2)';
+        ctx.beginPath();
+        ctx.ellipse(0, 3, this.size, this.size / 3, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = this.type.color;
+        ctx.beginPath();
+        ctx.arc(0, -this.size + bounce, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#1e293b';
+        ctx.stroke();
+
+        if (this.isChewing && Math.sin(this.animFrame * 10) > 0) {
+            ctx.fillStyle = '#991b1b';
+            ctx.beginPath();
+            ctx.arc(this.size / 2, -this.size + bounce + 2, 5, 0, Math.PI);
+            ctx.fill();
+        } else {
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(this.size / 2 + 2, -this.size + bounce + 2, 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        ctx.font = `${this.size * 0.8}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText(this.type.icon, this.size * 0.8, -this.size + bounce);
+
+        ctx.restore();
+    }
+}
+
+// --- 일회용 빅맥 폭격 wnstj 클래스 ---
+class SingleAttackEater {
+    constructor(damage) {
+        this.x = -30;
+        this.y = 340;
+        this.size = 26;
+        this.damage = damage;
+        this.speed = 3.8;
+        this.animFrame = 0;
+        this.isDead = false;
+    }
+
+    update() {
+        this.animFrame += 0.1;
+        let speedMultiplier = clickBoostTimer > 0 ? 1.25 : 1.0;
+        if (sodaBuffTimer > 0) speedMultiplier *= 2.0;
+
+        this.x += this.speed * speedMultiplier;
+
+        const hpPercent = Math.max(0, wall.hp / wall.maxHp);
+        const currentW = wall.baseWidth * (0.35 + 0.65 * hpPercent);
+        const targetX = wall.fixedX - (currentW * 0.4);
+
+        if (this.x >= targetX) {
+            this.attack();
+            this.isDead = true;
+        }
+    }
+
+    attack() {
+        if (wall.hp <= 0) return;
+        wall.hp -= this.damage;
+        
+        const hpPercent = Math.max(0, wall.hp / wall.maxHp);
+        const currentW = wall.baseWidth * (0.35 + 0.65 * hpPercent);
+        
+        const hitX = wall.fixedX - (currentW * 0.2);
+        const hitY = wall.fixedY - 100;
+        
+        wall.addBite(hitX, hitY);
+        createCrumbs(hitX, hitY);
+        createFloatingText(`🍔 빅맥 폭격 -${this.damage}`, hitX, hitY - 20, '#f59e0b');
+        playSound('skill');
+
+        if (wall.hp <= 0) nextStage();
+    }
+
+    draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+
+        const bounce = Math.sin(this.animFrame * 5) * 4;
+
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.arc(0, -this.size + bounce, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#fbbf24';
+        ctx.stroke();
+
+        ctx.font = `${this.size * 1.1}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText('🍔', 0, -this.size + bounce + 6);
+
+        ctx.restore();
+    }
+}
+
+// --- 스킬 사용 기능 ---
+function useSkill(type) {
+    if (type === 1) {
+        // 빅맥 폭격 (고정 가격: 15,000 G)
+        if (skill1Cd > 0 || wall.hp <= 0 || gold < BIGMAC_BOMB_COST) return;
+        
+        gold -= BIGMAC_BOMB_COST;
+        const dmg = Math.max(20, Math.floor(wall.maxHp * 0.35));
+        singleEaters.push(new SingleAttackEater(dmg));
+        skill1Cd = 15;
+        updateUI();
+    } else if (type === 2) {
+        if (skill2Cd > 0 || gold < SODA_BUFF_COST) return;
+        
+        gold -= SODA_BUFF_COST;
+        sodaBuffTimer = 300;
+        skill2Cd = 20;
+        createFloatingText(`🥤 탄산 폭풍! 2배속!`, canvas.width / 2, 150, '#3b82f6');
+        playSound('skill');
+        updateUI();
+    } else if (type === 3) {
+        if (hasUsedGrant) return;
+        
+        gold += 5000;
+        hasUsedGrant = true;
+        createFloatingText(`💰 지원금 +5,000 G`, canvas.width / 2, 180, '#34d399');
+        playSound('clear');
+        updateUI();
+    }
+}
+
+function updateSkillUI() {
+    const s1 = document.getElementById('skill1');
+    const s2 = document.getElementById('skill2');
+    const s3 = document.getElementById('skill3');
+
+    // 스킬 1 UI (고정 가격 15,000 G)
+    if (skill1Cd > 0) {
+        s1.disabled = true;
+        s1.innerText = `🍔 빅맥 폭격 (${skill1Cd}s)`;
+    } else {
+        s1.disabled = gold < BIGMAC_BOMB_COST;
+        s1.innerText = `🍔 빅맥 폭격 (${BIGMAC_BOMB_COST.toLocaleString()} G)`;
+    }
+
+    // 스킬 2 UI
+    if (skill2Cd > 0) {
+        s2.disabled = true;
+        s2.innerText = `🥤 탄산 소화제 (${skill2Cd}s)`;
+    } else {
+        s2.disabled = gold < SODA_BUFF_COST;
+        s2.innerText = `🥤 탄산 소화제 (${SODA_BUFF_COST.toLocaleString()} G)`;
+    }
+
+    // 스킬 3 UI
+    if (hasUsedGrant) {
+        s3.disabled = true;
+        s3.innerText = `💰 지원금 완료`;
+    } else {
+        s3.disabled = false;
+        s3.innerText = `💰 긴급 지원금 (+5,000 G)`;
+    }
+}
+
+setInterval(() => {
+    if (skill1Cd > 0) skill1Cd--;
+    if (skill2Cd > 0) skill2Cd--;
+    updateSkillUI();
+}, 1000);
+
+// --- 도감 기능 ---
+function openBook() {
+    const bookList = document.getElementById('book-list');
+    bookList.innerHTML = '';
+    EATER_TYPES.forEach(u => {
+        const item = document.createElement('div');
+        item.className = 'book-item';
+        item.innerHTML = `
+            <div class="book-icon">${u.icon}</div>
+            <div style="flex:1;">
+                <div style="font-weight:bold; font-size:1.05rem; color:${u.color};">${u.name}</div>
+                <div style="font-size:0.85rem; color:#fbbf24; margin-top:2px;">
+                    ⚔️ 공격력: <b>${u.dmg.toLocaleString()}</b> | ⚡ 공속: <b>${(u.spd * 0.8).toFixed(1)}회/초</b>
+                </div>
+                <div class="book-desc">${u.desc}</div>
+            </div>
+        `;
+        bookList.appendChild(item);
+    });
+    document.getElementById('book-modal').style.display = 'flex';
+}
+
+function closeBook() {
+    document.getElementById('book-modal').style.display = 'none';
+}
+
+// --- 파티클 & 텍스트 ---
+function createCrumbs(x, y) {
+    for (let i = 0; i < 4; i++) {
+        particles.push({
+            x: x, y: y,
+            vx: (Math.random() - 0.5) * 3,
+            vy: (Math.random() - 0.7) * 3,
+            size: Math.random() * 4 + 2,
+            color: ['#451a03', '#b45309', '#f59e0b'][Math.floor(Math.random()*3)],
+            life: 15
+        });
+    }
+}
+
+function createFloatingText(text, x, y, color) {
+    floatingTexts.push({ text: text, x: x, y: y, vy: -1.0, alpha: 1.0, color: color });
+}
+
+function nextStage() {
+    playSound('clear');
+    if (currentStage < MAX_STAGE) {
+        currentStage++;
+        wall = new MeatBurgerWall(currentStage);
+        createFloatingText(`STAGE ${currentStage} CLEAR!`, canvas.width / 2, 100, '#fbbf24');
+    } else {
+        alert("🎉 축하합니다! 30단계의 모든 고기버거를 먹어치웠습니다!");
+        currentStage = 1;
+        wall = new MeatBurgerWall(currentStage);
+    }
+    updateUI();
+}
+
+// --- UI 생성 ---
+const unitGrid = document.getElementById('unit-grid');
+
+function renderUnitUI() {
+    unitGrid.innerHTML = '';
+    EATER_TYPES.forEach((u) => {
+        const card = document.createElement('div');
+        card.className = 'unit-card';
+        card.onclick = () => buyEater(u.id);
+
+        card.innerHTML = `
+            <div class="unit-icon">${u.icon}</div>
+            <div class="unit-info">
+                <div class="unit-name">${u.name}</div>
+                <div class="unit-count">보유: ${unitCounts[u.id]}명</div>
+                <div class="unit-cost">가격: ${u.cost.toLocaleString()} G</div>
+            </div>
+        `;
+        unitGrid.appendChild(card);
+    });
+}
+
+function buyEater(id) {
+    const u = EATER_TYPES[id];
+    if (gold >= u.cost) {
+        gold -= u.cost;
+        unitCounts[id]++;
+        eaters.push(new Eater(u));
+        updateUI();
+    }
+}
+
+function updateUI() {
+    document.getElementById('stage-txt').innerText = `${currentStage} / ${MAX_STAGE}`;
+    document.getElementById('gold-txt').innerText = Math.floor(gold).toLocaleString();
+    document.getElementById('count-txt').innerText = eaters.length.toLocaleString();
+    updateSkillUI();
+    renderUnitUI();
+}
+
+// 클릭 이벤트
+canvas.addEventListener('mousedown', handleTap);
+canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handleTap(); });
+
+function handleTap() {
+    clickBoostTimer = 12; // 클릭 시 속도 1.25배 가속
+}
+
+// --- 게임 루프 ---
+function gameLoop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // 바닥
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(0, 380, canvas.width, 40);
+
+    // 버거 그리기
+    wall.draw(ctx);
+
+    // 타이머 관리
+    if (clickBoostTimer > 0) clickBoostTimer--;
+    if (sodaBuffTimer > 0) sodaBuffTimer--;
+
+    // 지속형 wnstj들 업데이트
+    eaters.forEach(e => {
+        e.update();
+        e.draw(ctx);
+    });
+
+    // 1회 공격형 wnstj들 업데이트 및 그리기
+    for (let i = singleEaters.length - 1; i >= 0; i--) {
+        let se = singleEaters[i];
+        se.update();
+        se.draw(ctx);
+        if (se.isDead) singleEaters.splice(i, 1);
+    }
+
+    // 파티클
+    for (let i = particles.length - 1; i >= 0; i--) {
+        let p = particles[i];
+        p.x += p.vx; p.y += p.vy; p.life--;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x, p.y, p.size, p.size);
+        if (p.life <= 0) particles.splice(i, 1);
+    }
+
+    // 텍스트
+    for (let i = floatingTexts.length - 1; i >= 0; i--) {
+        let ft = floatingTexts[i];
+        ft.y += ft.vy; ft.alpha -= 0.025;
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, ft.alpha);
+        ctx.fillStyle = ft.color;
+        ctx.font = 'bold 15px sans-serif';
+        ctx.fillText(ft.text, ft.x, ft.y);
+        ctx.restore();
+        if (ft.alpha <= 0) floatingTexts.splice(i, 1);
+    }
+
+    document.getElementById('gold-txt').innerText = Math.floor(gold).toLocaleString();
+    requestAnimationFrame(gameLoop);
+}
+
+updateUI();
+gameLoop();
+</script>
+</body>
+</html>

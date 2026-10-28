@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>wnstj 점프맵 - HARDCORE</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background-color: #0f0f1b;
+            color: #ffffff;
+            font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        #game-container {
+            position: relative;
+            width: 800px;
+            height: 500px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+            border-radius: 12px;
+            overflow: hidden;
+            background: linear-gradient(to bottom, #0d1117, #161b22);
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: none;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9);
+        }
+        .ui-group {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .badge {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            font-size: 14px;
+        }
+        .badge-stage {
+            background: #ff2e63;
+            color: #fff;
+            font-size: 16px;
+        }
+        .badge-fat {
+            background: #ff9f43;
+            color: #fff;
+            font-size: 14px;
+        }
+        #controls-hint {
+            position: absolute;
+            bottom: 10px;
+            left: 20px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            pointer-events: none;
+        }
+        /* Touch Controls */
+        #touch-controls {
+            display: none;
+            position: absolute;
+            bottom: 15px;
+            width: 100%;
+            padding: 0 20px;
+            justify-content: space-between;
+            pointer-events: none;
+        }
+        .touch-btn-group {
+            display: flex;
+            gap: 10px;
+            pointer-events: auto;
+        }
+        .touch-btn {
+            width: 55px;
+            height: 55px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            color: white;
+            user-select: none;
+            touch-action: manipulation;
+        }
+        .touch-btn:active {
+            background: rgba(255, 46, 99, 0.6);
+        }
+        /* Clear Modal */
+        #clear-modal {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            z-index: 10;
+        }
+        #clear-modal h1 {
+            font-size: 38px;
+            color: #ff2e63;
+            margin-bottom: 10px;
+            text-shadow: 0 0 12px #ff2e63;
+        }
+        #clear-modal p {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #eaeaea;
+        }
+        #restart-btn {
+            padding: 12px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            background: #08d9d6;
+            color: #252a34;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        #restart-btn:hover {
+            transform: scale(1.05);
+            background: #ff2e63;
+            color: #fff;
+        }
+        @media (max-width: 820px) {
+            #game-container {
+                width: 100vw;
+                height: 62.5vw;
+                max-height: 100vh;
+                border-radius: 0;
+            }
+            #touch-controls {
+                display: flex;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="gameCanvas" width="800" height="500"></canvas>
+    
+    <div id="ui-layer">
+        <div class="ui-group">
+            <div class="badge badge-stage">wnstj 점프맵 <span id="stage-num">1</span> / 100</div>
+        </div>
+        <div class="ui-group">
+            <div class="badge badge-fat">🍔 뚱뚱도: <span id="fat-level">0</span>px</div>
+            <div class="badge">사망: <span id="death-count">0</span></div>
+            <div class="badge">시간: <span id="timer">00:00</span></div>
+        </div>
+    </div>
+
+    <div id="controls-hint">이동: ← → | 점프: ↑ / Space | 대시(돌진): Shift 또는 X | 리셋: R</div>
+
+    <div id="touch-controls">
+        <div class="touch-btn-group">
+            <div class="touch-btn" id="btn-left">◀</div>
+            <div class="touch-btn" id="btn-right">▶</div>
+        </div>
+        <div class="touch-btn-group">
+            <div class="touch-btn" id="btn-dash" style="font-size:12px; width:45px; height:45px; background:rgba(255,46,99,0.4);">대시</div>
+            <div class="touch-btn" id="btn-reset" style="font-size:14px; width:45px; height:45px;">R</div>
+            <div class="touch-btn" id="btn-jump" style="width:65px; height:65px;">▲</div>
+        </div>
+    </div>
+
+    <div id="clear-modal">
+        <h1>🎉 HARDCORE ALL CLEAR! 🎉</h1>
+        <p>엄청난 피지컬로 거대해진 피지컬 한계를 뚫고 100단계를 완파하셨습니다!</p>
+        <p id="final-stats" style="color: #08d9d6; font-size: 16px;"></p>
+        <button id="restart-btn" onclick="resetGame()">처음부터 다시하기</button>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+const stageNumEl = document.getElementById('stage-num');
+const deathCountEl = document.getElementById('death-count');
+const timerEl = document.getElementById('timer');
+const fatLevelEl = document.getElementById('fat-level');
+const clearModal = document.getElementById('clear-modal');
+const finalStatsEl = document.getElementById('final-stats');
+
+let currentStage = 1;
+let deaths = 0;
+let startTime = Date.now();
+let elapsedTime = 0;
+let isGameCleared = false;
+let isTransitioning = false;
+
+const keys = { left: false, right: false, jump: false, dash: false };
+
+const BASE_WIDTH = 28;
+const BASE_HEIGHT = 26;
+const FAT_PER_STAGE = 0.5; // 단계별 몸집 증가폭 상승
+
+const player = {
+    x: 40,
+    y: 380,
+    width: BASE_WIDTH,
+    height: BASE_HEIGHT,
+    vx: 0,
+    vy: 0,
+    speed: 4.6,
+    baseJumpForce: -10.8,
+    jumpForce: -10.8,
+    gravity: 0.48,
+    isGrounded: false,
+    canDash: true,
+    isDashing: false,
+    dashTimer: 0,
+    facing: 1,
+    color: '#08d9d6'
+};
+
+const goal = {
+    x: 720,
+    y: 100,
+    width: 38,
+    height: 38,
+    bounce: 0
+};
+
+let platforms = [];
+let spikes = [];
+let colas = [];
+let sawblades = [];
+let particles = [];
+
+function seededRandom(seed) {
+    let x = Math.sin(seed++) * 10000;
+    return x - Math.floor(x);
+}
+
+// 정확히 4단계마다 1개씩만 콜라 기류 배치 (약 25개)
+function hasColaStage(stage) {
+    return (stage % 4 === 0);
+}
+
+function generateStage(stage) {
+    const plats = [];
+    const spks = [];
+    const colasArr = [];
+    const saws = [];
+    let seed = stage * 98765;
+
+    // 시작 발판 (단계가 올라갈수록 작아짐)
+    let startPlatWidth = Math.max(60, 110 - stage * 0.4);
+    plats.push({ x: 20, y: 430, width: startPlatWidth, height: 18, type: 'normal', opacity: 1 });
+
+    let currentX = 20 + startPlatWidth;
+    let currentY = 410;
+    const count = 3 + Math.floor(stage / 12);
+
+    for (let i = 0; i < count; i++) {
+        let stepX = 85 + seededRandom(seed++) * 80;
+        let stepY = (seededRandom(seed++) - 0.5) * 140;
+
+        let px = currentX + stepX;
+        let py = currentY + stepY;
+
+        px = Math.min(Math.max(px, 120), 660);
+        py = Math.min(Math.max(py, 120), 430);
+
+        // 발판 폭 극단적 감소
+        let pWidth = Math.max(35, 80 - (stage * 0.5));
+        let type = 'normal';
+
+        let rVal = seededRandom(seed++);
+        if (rVal < 0.35 + stage * 0.003) type = 'moving';
+        else if (rVal < 0.65) type = 'vanish';
+
+        plats.push({
+            x: px,
+            y: py,
+            width: pWidth,
+            height: 14,
+            type: type,
+            vx: type === 'moving' ? (seededRandom(seed++) > 0.5 ? 2.2 : -2.2) * (1 + stage * 0.012) : 0,
+            minX: Math.max(px - 60, 100),
+            maxX: Math.min(px + 60, 720),
+            touched: false,
+            opacity: 1
+        });
+
+        // 발판 위 가시 트릭
+        if (stage > 4 && seededRandom(seed++) < 0.4 && type === 'normal') {
+            spks.push({
+                x: px + pWidth / 2 - 8,
+                y: py - 12,
+                width: 16,
+                height: 12
+            });
+        }
+
+        currentX = px;
+        currentY = py;
+    }
+
+    // [콜라 상승 기류] 정확히 4의 배수 스테이지에만 딱 1개 배치
+    if (hasColaStage(stage)) {
+        colasArr.push({
+            x: 280 + seededRandom(seed++) * 200,
+            y: 150 + seededRandom(seed++) * 140,
+            width: 40,
+            height: 220,
+            bubbleAngle: 0
+        });
+    }
+
+    // [회전 톱날 장애물]
+    if (stage >= 6) {
+        let sawCount = Math.min(1 + Math.floor(stage / 20), 4);
+        for (let s = 0; s < sawCount; s++) {
+            saws.push({
+                x: 180 + seededRandom(seed++) * 450,
+                y: 120 + seededRandom(seed++) * 220,
+                radius: 16 + (stage > 50 ? 4 : 0),
+                angle: seededRandom(seed++) * Math.PI * 2,
+                speed: 0.05 + stage * 0.0008,
+                orbitRadius: 45 + seededRandom(seed++) * 55
+            });
+        }
+    }
+
+    // 목표(빅맥) 지점 발판
+    let finalPlatX = Math.min(currentX + 60, 700);
+    let finalPlatY = Math.max(currentY - 30, 100);
+    plats.push({ x: finalPlatX, y: finalPlatY, width: 65, height: 18, type: 'normal', opacity: 1 });
+
+    goal.x = finalPlatX + 13;
+    goal.y = finalPlatY - 42;
+
+    // 바닥 촘촘한 가시 지대
+    for (let x = 0; x < canvas.width; x += 32) {
+        if (seededRandom(seed++) < 0.85) {
+            spks.push({ x: x, y: 486, width: 28, height: 14 });
+        }
+    }
+
+    return { platforms: plats, spikes: spks, colas: colasArr, saws: saws };
+}
+
+function loadStage(stage) {
+    if (stage > 100) {
+        gameClear();
+        return;
+    }
+
+    currentStage = stage;
+    stageNumEl.innerText = stage;
+
+    // 뚱뚱도 계산 및 피지컬 패널티 적용
+    let addedFat = (stage - 1) * FAT_PER_STAGE;
+    player.width = BASE_WIDTH + addedFat;
+    player.height = BASE_HEIGHT + (addedFat * 0.75);
+    fatLevelEl.innerText = "+" + addedFat.toFixed(1);
+
+    // 뚱뚱해질수록 점프력 미세 감쇠 패널티
+    player.jumpForce = player.baseJumpForce + (addedFat * 0.015);
+
+    const data = generateStage(stage);
+    platforms = data.platforms;
+    spikes = data.spikes;
+    colas = data.colas;
+    sawblades = data.saws;
+
+    player.x = 30;
+    player.y = 430 - player.height - 2;
+    player.vx = 0;
+    player.vy = 0;
+    player.isGrounded = true;
+    player.canDash = true;
+    player.isDashing = false;
+    isTransitioning = false;
+}
+
+function die() {
+    if (isTransitioning) return;
+    deaths++;
+    deathCountEl.innerText = deaths;
+    createParticles(player.x + player.width/2, player.y + player.height/2, '#ff2e63', 20);
+    loadStage(currentStage);
+}
+
+function gameClear() {
+    isGameCleared = true;
+    clearModal.style.display = 'flex';
+    const totalSecs = Math.floor(elapsedTime / 1000);
+    const mins = String(Math.floor(totalSecs / 60)).padStart(2, '0');
+    const secs = String(totalSecs % 60).padStart(2, '0');
+    finalStatsEl.innerText = `총 시간: ${mins}:${secs} | 총 사망: ${deaths}회 | 최종 뚱뚱도: +${((100-1)*FAT_PER_STAGE).toFixed(1)}px`;
+}
+
+function resetGame() {
+    deaths = 0;
+    deathCountEl.innerText = deaths;
+    startTime = Date.now();
+    isGameCleared = false;
+    clearModal.style.display = 'none';
+    loadStage(1);
+}
+
+function createParticles(x, y, color, count = 8) {
+    for (let i = 0; i < count; i++) {
+        particles.push({
+            x: x,
+            y: y,
+            vx: (Math.random() - 0.5) * 7,
+            vy: (Math.random() - 0.5) * 7,
+            size: Math.random() * 5 + 2,
+            color: color,
+            life: 1
+        });
+    }
+}
+
+function updateParticles() {
+    for (let i = particles.length - 1; i >= 0; i--) {
+        let p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= 0.04;
+        if (p.life <= 0) particles.splice(i, 1);
+    }
+}
+
+function drawParticles() {
+    particles.forEach(p => {
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = p.life;
+        ctx.fillRect(p.x, p.y, p.size, p.size);
+    });
+    ctx.globalAlpha = 1.0;
+}
+
+function drawColas() {
+    colas.forEach(c => {
+        c.bubbleAngle += 0.18;
+        ctx.save();
+        ctx.fillStyle = 'rgba(120, 40, 10, 0.28)';
+        ctx.fillRect(c.x, c.y, c.width, c.height);
+
+        ctx.strokeStyle = 'rgba(255, 140, 0, 0.7)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(c.x, c.y, c.width, c.height);
+
+        ctx.fillStyle = '#ffffff';
+        for (let py = 10; py < c.height; py += 22) {
+            let bx = c.x + c.width / 2 + Math.sin(c.bubbleAngle + py) * 10;
+            let by = c.y + c.height - ((py + (Date.now() * 0.25) % c.height) % c.height);
+            ctx.beginPath();
+            ctx.arc(bx, by, 3, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+    });
+}
+
+function drawSaws() {
+    sawblades.forEach(s => {
+        s.angle += s.speed;
+        let cx = s.x + Math.cos(s.angle) * s.orbitRadius;
+        let cy = s.y + Math.sin(s.angle) * s.orbitRadius;
+
+        s.currentX = cx;
+        s.currentY = cy;
+
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(s.angle * 4);
+        ctx.fillStyle = '#ff2e63';
+        ctx.beginPath();
+        for (let i = 0; i < 8; i++) {
+            ctx.rotate(Math.PI / 4);
+            ctx.lineTo(0, -s.radius);
+            ctx.lineTo(s.radius * 0.45, -s.radius * 0.45);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(0, 0, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    });
+}
+
+function drawBigMac(x, y, size) {
+    goal.bounce += 0.06;
+    let floatY = y + Math.sin(goal.bounce) * 4;
+
+    ctx.save();
+    ctx.translate(x + size/2, floatY + size/2);
+
+    ctx.fillStyle = '#E69C24';
+    ctx.beginPath(); ctx.arc(0, -9, 15, Math.PI, 0, false); ctx.fill();
+
+    ctx.fillStyle = '#FFF8DC';
+    ctx.fillRect(-6, -13, 2, 2); ctx.fillRect(2, -15, 2, 2); ctx.fillRect(7, -11, 2, 2);
+
+    ctx.fillStyle = '#55A846'; ctx.fillRect(-15, -9, 30, 3);
+    ctx.fillStyle = '#5C2C16'; ctx.fillRect(-14, -6, 28, 4);
+    ctx.fillStyle = '#F0A830'; ctx.fillRect(-14, -2, 28, 3);
+    ctx.fillStyle = '#5C2C16'; ctx.fillRect(-14, 5, 28, 4);
+    ctx.fillStyle = '#E69C24'; ctx.fillRect(-15, 9, 30, 5);
+
+    ctx.restore();
+}
+
+function drawChubbyPlayer(p) {
+    ctx.save();
+    let r = Math.min(p.width, p.height) * 0.42;
+    let x = p.x;
+    let y = p.y;
+    let w = p.width;
+    let h = p.height;
+
+    ctx.fillStyle = p.isDashing ? '#ff9f43' : p.color;
+    ctx.shadowColor = ctx.fillStyle;
+    ctx.shadowBlur = p.isDashing ? 18 : 8;
+    
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // 볼살 및 표정
+    ctx.fillStyle = '#ff82a9';
+    ctx.globalAlpha = 0.6;
+    let cheekSize = 4 + (p.width - BASE_WIDTH) * 0.22;
+    ctx.beginPath();
+    ctx.arc(x + 5, y + h * 0.55, cheekSize, 0, Math.PI * 2);
+    ctx.arc(x + w - 5, y + h * 0.55, cheekSize, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1.0;
+
+    ctx.fillStyle = '#1a1a2e';
+    let eyeXOffset = p.facing > 0 ? w - 13 : 3;
+    ctx.fillRect(x + eyeXOffset, y + h * 0.3, 4, 6);
+    ctx.fillRect(x + eyeXOffset + 6, y + h * 0.3, 4, 6);
+
+    ctx.restore();
+}
+
+function triggerDash() {
+    if (!player.canDash || player.isDashing) return;
+    player.isDashing = true;
+    player.canDash = false;
+    player.dashTimer = 10;
+    player.vy = 0;
+}
+
+function update() {
+    if (isGameCleared || isTransitioning) return;
+
+    elapsedTime = Date.now() - startTime;
+    const totalSecs = Math.floor(elapsedTime / 1000);
+    const mins = String(Math.floor(totalSecs / 60)).padStart(2, '0');
+    const secs = String(totalSecs % 60).padStart(2, '0');
+    timerEl.innerText = `${mins}:${secs}`;
+
+    if (keys.left) { player.vx = -player.speed; player.facing = -1; }
+    else if (keys.right) { player.vx = player.speed; player.facing = 1; }
+    else player.vx = 0;
+
+    if (keys.dash) {
+        triggerDash();
+        keys.dash = false;
+    }
+
+    if (player.isDashing) {
+        player.vx = player.facing * 12.5;
+        player.dashTimer--;
+        if (player.dashTimer <= 0) player.isDashing = false;
+    }
+
+    if (keys.jump && player.isGrounded) {
+        player.vy = player.jumpForce;
+        player.isGrounded = false;
+        createParticles(player.x + player.width/2, player.y + player.height, '#ffffff', 5);
+    }
+
+    if (!player.isDashing) {
+        player.vy += player.gravity;
+    }
+
+    if (player.isGrounded) {
+        player.canDash = true;
+    }
+
+    // 콜라 기류 탄산 상승
+    colas.forEach(c => {
+        if (player.x < c.x + c.width &&
+            player.x + player.width > c.x &&
+            player.y < c.y + c.height &&
+            player.y + player.height > c.y) {
+            player.vy = -8.2;
+            player.canDash = true;
+            if (Math.random() < 0.4) {
+                createParticles(player.x + player.width/2, player.y + player.height/2, '#ffa500', 2);
+            }
+        }
+    });
+
+    player.x += player.vx;
+    player.y += player.vy;
+
+    if (player.x < 0) player.x = 0;
+    if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+
+    if (player.y > canvas.height + 50) {
+        die();
+        return;
+    }
+
+    player.isGrounded = false;
+
+    // 플랫폼 판정 (Vanishing 발판 유지시간 대폭 감소)
+    platforms.forEach(plat => {
+        if (plat.type === 'moving') {
+            plat.x += plat.vx;
+            if (plat.x < plat.minX || plat.x + plat.width > plat.maxX) plat.vx *= -1;
+        }
+
+        if (plat.type === 'vanish' && plat.touched) {
+            plat.opacity -= 0.08; // 소멸 속도 2.5배 가속
+            if (plat.opacity <= 0) return;
+        }
+
+        if (plat.opacity > 0 &&
+            player.x < plat.x + plat.width &&
+            player.x + player.width > plat.x &&
+            player.y + player.height >= plat.y &&
+            player.y + player.height <= plat.y + plat.height + player.vy) {
+            
+            if (player.vy > 0) {
+                player.isGrounded = true;
+                player.vy = 0;
+                player.y = plat.y - player.height;
+
+                if (plat.type === 'moving') player.x += plat.vx;
+                if (plat.type === 'vanish') plat.touched = true;
+            }
+        }
+    });
+
+    // 톱날 피격 (몸집이 커질수록 판정이 예민해짐)
+    sawblades.forEach(s => {
+        let distSq = Math.pow((player.x + player.width/2) - s.currentX, 2) + Math.pow((player.y + player.height/2) - s.currentY, 2);
+        if (distSq < Math.pow(s.radius + (player.width * 0.35), 2)) {
+            die();
+        }
+    });
+
+    spikes.forEach(spk => {
+        if (player.x < spk.x + spk.width &&
+            player.x + player.width > spk.x &&
+            player.y < spk.y + spk.height &&
+            player.y + player.height > spk.y) {
+            die();
+        }
+    });
+
+    if (player.x < goal.x + goal.width &&
+        player.x + player.width > goal.x &&
+        player.y < goal.y + goal.height &&
+        player.y + player.height > goal.y) {
+        
+        isTransitioning = true;
+        createParticles(goal.x + goal.width/2, goal.y + goal.height/2, '#ff9f43', 30);
+        setTimeout(() => {
+            loadStage(currentStage + 1);
+        }, 80);
+    }
+
+    updateParticles();
+}
+
+function render() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.02)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < canvas.width; x += 40) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+    }
+    for (let y = 0; y < canvas.height; y += 40) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+    }
+
+    drawColas();
+    drawSaws();
+
+    platforms.forEach(plat => {
+        if (plat.opacity <= 0) return;
+        ctx.save();
+        ctx.globalAlpha = plat.opacity;
+
+        if (plat.type === 'normal') ctx.fillStyle = '#16213e';
+        else if (plat.type === 'moving') ctx.fillStyle = '#e94560';
+        else if (plat.type === 'vanish') ctx.fillStyle = '#f3c623';
+
+        ctx.fillRect(plat.x, plat.y, plat.width, plat.height);
+        
+        ctx.fillStyle = (plat.type === 'normal') ? '#ff2e63' : (plat.type === 'moving' ? '#ff9f43' : '#fff');
+        ctx.fillRect(plat.x, plat.y, plat.width, 3);
+        ctx.restore();
+    });
+
+    ctx.fillStyle = '#ff2e63';
+    spikes.forEach(spk => {
+        ctx.beginPath();
+        ctx.moveTo(spk.x, spk.y + spk.height);
+        ctx.lineTo(spk.x + spk.width / 2, spk.y);
+        ctx.lineTo(spk.x + spk.width, spk.y + spk.height);
+        ctx.closePath();
+        ctx.fill();
+    });
+
+    drawBigMac(goal.x, goal.y, goal.width);
+    drawParticles();
+    drawChubbyPlayer(player);
+}
+
+function gameLoop() {
+    update();
+    render();
+    requestAnimationFrame(gameLoop);
+}
+
+// 키 조작 이벤트
+window.addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = true;
+    if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = true;
+    if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W' || e.key === ' ') keys.jump = true;
+    if (e.key === 'Shift' || e.key === 'x' || e.key === 'X') keys.dash = true;
+    if (e.key === 'r' || e.key === 'R') die();
+});
+
+window.addEventListener('keyup', e => {
+    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = false;
+    if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = false;
+    if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W' || e.key === ' ') keys.jump = false;
+});
+
+// 터치 조작 이벤트
+const setupTouchBtn = (id, keyName) => {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    btn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[keyName] = true; });
+    btn.addEventListener('touchend', (e) => { e.preventDefault(); keys[keyName] = false; });
+    btn.addEventListener('mousedown', () => keys[keyName] = true);
+    btn.addEventListener('mouseup', () => keys[keyName] = false);
+};
+
+setupTouchBtn('btn-left', 'left');
+setupTouchBtn('btn-right', 'right');
+setupTouchBtn('btn-jump', 'jump');
+setupTouchBtn('btn-dash', 'dash');
+const btnReset = document.getElementById('btn-reset');
+if (btnReset) btnReset.addEventListener('click', () => die());
+
+// 게임 시작
+loadStage(1);
+gameLoop();
+</script>
+</body>
+</html>
