@@ -14,20 +14,35 @@
     // 3. 토큰도 없고 세션 인증도 없는 경우 (무단 접속 차단)
     if (sessionStorage.getItem('capper_auth') !== 'true') {
       document.addEventListener('DOMContentLoaded', () => {
-        // 기존 문서 내용을 강제로 지우고 풀스크린 경고창 생성
+        // 이미지가 연상시키는 강렬한 빨간색 풀스크린 경고 화면으로 강제 교체
         document.body.innerHTML = `
-          <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #1e1f22; color: white; display: flex; align-items: center; justify-content: center; font-family: 'Noto Sans KR', sans-serif; z-index: 999999; margin: 0; padding: 20px; box-sizing: border-box;">
-            <div style="background: #2b2d31; border: 2px solid rgba(239, 68, 68, 0.4); padding: 40px; border-radius: 20px; max-width: 500px; width: 100%; text-align: box; box-shadow: 0 20px 40px rgba(0,0,0,0.6); text-align: center;">
-              <div style="font-size: 48px; margin-bottom: 15px;">🚨</div>
-              <h2 style="color: #f87171; font-size: 26px; margin-bottom: 15px; font-weight: 900; letter-spacing: -0.5px;">불법 접근 경고</h2>
-              <p style="color: #9ca3af; font-size: 15px; line-height: 1.6; margin-bottom: 30px;">
-                이 게임 페이지는 <strong style="color: #ffffff;">Capper</strong> 플랫폼을 통해서만 이용할 수 있습니다.<br>
-                무단 링크 공유나 직접 접속은 엄격히 금지됩니다.
-              </p>
-              <a href="https://dohyuni4321.github.io/Capper/" style="background-color: #4f46e5; color: white; padding: 14px 28px; border-radius: 12px; text-decoration: none; font-size: 15px; font-weight: bold; display: inline-block; box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4); transition: background 0.2s;">
-                Capper 메인으로 돌아가기
+          <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #f02828; color: white; display: flex; flex-direction: column; justify-content: center; padding: 60px; font-family: 'Noto Sans KR', sans-serif; z-index: 999999; margin: 0; box-sizing: border-box; overflow: hidden;">
+            
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; width: 100%; max-width: 1200px; margin: 0 auto;">
+              <div>
+                <h1 style="font-size: 84px; font-weight: 900; margin: 0 0 20px 0; letter-spacing: -2px; line-height: 1.1;">불법접근</h1>
+                <p style="font-size: 32px; font-weight: 500; margin: 0 0 10px 0; line-height: 1.4;">불법 접근이 감지되었습니다.</p>
+                <p style="font-size: 32px; font-weight: 500; margin: 0; line-height: 1.4;">Capper 플랫폼을 통한 접근 이외는 보안 위반으로 간주됩니다.</p>
+              </div>
+
+              <!-- 주의/경고 삼각형 아이콘 -->
+              <div style="margin-left: 40px; flex-shrink: 0;">
+                <svg width="220" height="190" viewBox="0 0 24 21" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 10px 20px rgba(0,0,0,0.2));">
+                  <path d="M12 0L23.4282 20.25H0.571796L12 0Z" fill="white" fill-opacity="0.15"/>
+                  <path d="M12 1.5L22.2552 19.5H1.7448L12 1.5Z" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+                  <path d="M12 7V13" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                  <circle cx="12" cy="16.5" r="1.5" fill="white"/>
+                </svg>
+              </div>
+            </div>
+
+            <!-- 메인으로 돌아가기 버튼 (필요시 클릭해서 탈출 가능) -->
+            <div style="max-width: 1200px; width: 100%; margin: 40px auto 0 auto;">
+              <a href="https://dohyuni4321.github.io/Capper/" style="background-color: white; color: #f02828; padding: 14px 28px; border-radius: 12px; text-decoration: none; font-size: 18px; font-weight: bold; display: inline-block; box-shadow: 0 10px 20px rgba(0,0,0,0.15);">
+                Capper로 돌아가기
               </a>
             </div>
+
           </div>
         `;
       });
