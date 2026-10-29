@@ -19,9 +19,16 @@
     @media (min-width: 1024px) { .masonry-grid { column-count: 3; } }
     @media (min-width: 1400px) { .masonry-grid { column-count: 4; } }
     .break-inside-avoid { break-inside: avoid; margin-bottom: 1rem; }
+    /* 링크 텍스트 드래그 및 복사 방지 보안 스타일 */
+    .no-copy {
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+    }
   </style>
 </head>
-<body class="bg-[#313338] text-gray-100 h-screen flex overflow-hidden font-sans select-none">
+<body class="bg-[#313338] text-gray-100 h-screen flex overflow-hidden font-sans select-none" oncontextmenu="return false;">
 
   <!-- AUTH MODAL -->
   <div id="authOverlay" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -69,7 +76,6 @@
   <div class="w-60 bg-[#2b2d31] flex flex-col shrink-0">
     <div class="h-12 border-b border-[#1f2023] px-4 flex items-center justify-between font-bold text-gray-200 shadow-sm">
       <span class="truncate tracking-wide">Capper Workspace</span>
-      <!-- 관리자(Capper)에게만 채널 생성 버튼 노출 -->
       <button id="createChannelHeaderBtn" onclick="openCreateChannelModal()" title="Create Channel" class="text-gray-400 hover:text-white p-1 rounded hover:bg-gray-700/50 hidden">
         <i data-lucide="plus" class="w-4 h-4"></i>
       </button>
@@ -111,7 +117,7 @@
     <div class="h-12 border-b border-[#202225] px-6 flex items-center justify-between shrink-0 bg-[#313338]/90 backdrop-blur">
       <div class="flex items-center space-x-2">
         <i id="headerIcon" data-lucide="hash" class="w-5 h-5 text-gray-400"></i>
-        <span id="currentChannelName" class="font-bold text-gray-100">general</span>
+        <span id="currentChannelName" class="font-bold text-gray-100">Select Channel</span>
         <span id="lockBadge" class="hidden text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded flex items-center gap-1">
           <i data-lucide="lock" class="w-3 h-3"></i> Protected
         </span>
@@ -284,7 +290,7 @@
 
     let currentUser = null;
     let currentUserData = {};
-    let currentChannel = 'general';
+    let currentChannel = null;
     let currentChannelType = 'board';
     let currentDMUser = null;
     let targetChannelToJoin = null;
@@ -295,7 +301,6 @@
     let dmMessages = [];
     let unlockedChannels = new Set();
 
-    // 관리자 여부 확인 함수 (대소문자 무관하게 "capper"인 경우)
     function isAdmin() {
       return currentUser && currentUser.toLowerCase() === 'capper';
     }
@@ -313,9 +318,8 @@
         document.getElementById('authOverlay').classList.add('hidden');
         updateAdminUI();
         updateUserProfileUI();
-        loadChannels();
+        await loadChannels();
         loadUsers();
-        loadPosts();
       } else {
         document.getElementById('authOverlay').classList.remove('hidden');
       }
@@ -371,7 +375,6 @@
           updateUserProfileUI();
           await loadChannels();
           loadUsers();
-          loadPosts();
         } else {
           const { data, error } = await sbClient.from('users').select('*').eq('username', username).eq('password', password).maybeSingle();
           if (error || !data) throw new Error('Invalid username or password.');
@@ -384,7 +387,6 @@
           updateUserProfileUI();
           await loadChannels();
           loadUsers();
-          loadPosts();
         }
       } catch (err) {
         showAuthAlert(err.message || 'Authentication error occurred.', 'red');
@@ -456,6 +458,11 @@
       const { data } = await sbClient.from('channels').select('*').order('created_at', { ascending: true });
       channels = data || [];
       renderChannels();
+
+      // 존재하지 않는 general 대신, 첫 번째 채널(또는 가장 먼저 만들어진 채널)을 자동으로 선택
+      if (channels.length > 0 && !currentChannel && !currentDMUser) {
+        selectChannel(channels[0].id);
+      }
     }
 
     async function loadUsers() {
@@ -487,7 +494,6 @@
         `;
         btn.appendChild(infoDiv);
 
-        // 관리자(Capper)인 경우 채널 삭제 버튼 표시 (기본 general 채널 등은 필요시 삭제 가능)
         if (isAdmin()) {
           const deleteBtn = document.createElement('button');
           deleteBtn.onclick = (e) => {
@@ -514,7 +520,7 @@
         alert('Failed to delete channel: ' + error.message);
       } else {
         if (currentChannel === channelId) {
-          selectChannel('general');
+          if (channels.length > 0) selectChannel(channels[0].id);
         }
         loadChannels();
       }
@@ -685,28 +691,28 @@
       const feed = document.getElementById('chatFeed');
       feed.innerHTML = '';
       if (channelPosts.length === 0) {
-        feed.innerHTML = `<div class="text-center py-10 text-gray-500 text-sm">No messages yet.</div>`;
+        feed.innerHTML = `<div class="text-xs text-gray-500 text-center py-4">No messages yet. Start the conversation!</div>`;
         return;
       }
-      channelPosts.forEach(post => {
-        const item = document.createElement('div');
-        item.className = "flex items-start space-x-3 py-1 group hover:bg-[#2e3035] px-2 rounded transition";
-        const canDelete = currentUser === post.user_name || isAdmin();
-        item.innerHTML = `
-          <div class="w-9 h-9 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-xs text-white uppercase shrink-0 mt-0.5">
-            ${post.user_name.charAt(0)}
+      channelPosts.forEach(msg => {
+        const div = document.createElement('div');
+        div.className = "flex items-start space-x-3 group";
+        const canDelete = isAdmin() || msg.user_name === currentUser;
+        
+        div.innerHTML = `
+          <div class="w-9 h-9 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-xs text-white uppercase shrink-0 overflow-hidden">
+            ${msg.user_name.charAt(0)}
           </div>
           <div class="flex-1 min-w-0">
             <div class="flex items-center space-x-2">
-              <span class="font-semibold text-sm text-gray-200">${post.user_name}</span>
-              <span class="text-[10px] text-gray-400">${new Date(post.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              <span class="text-sm font-semibold text-gray-200">${msg.user_name}</span>
+              <span class="text-[10px] text-gray-500">${new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
             </div>
-            <p class="text-sm text-gray-300 break-words mt-0.5 whitespace-pre-line">${post.content || ''}</p>
-            ${post.image_url ? `<img src="${post.image_url}" class="max-h-60 rounded-lg mt-2 object-cover"/>` : ''}
+            <p class="text-sm text-gray-300 mt-0.5 break-words">${escapeHtml(msg.content || '')}</p>
           </div>
-          ${canDelete ? `<button onclick="deletePost('${post.id}')" class="text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+          ${canDelete ? `<button onclick="deletePost('${msg.id}')" class="text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
         `;
-        feed.appendChild(item);
+        feed.appendChild(div);
       });
       feed.scrollTop = feed.scrollHeight;
       lucide.createIcons();
@@ -716,25 +722,25 @@
       const feed = document.getElementById('dmFeed');
       feed.innerHTML = '';
       if (dmMessages.length === 0) {
-        feed.innerHTML = `<div class="text-center py-10 text-gray-500 text-sm">No direct messages yet. Say hello!</div>`;
+        feed.innerHTML = `<div class="text-xs text-gray-500 text-center py-4">Say hello to ${currentDMUser}!</div>`;
         return;
       }
       dmMessages.forEach(msg => {
-        const item = document.createElement('div');
-        item.className = "flex items-start space-x-3 py-1 group hover:bg-[#2e3035] px-2 rounded transition";
-        item.innerHTML = `
-          <div class="w-9 h-9 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-xs text-white uppercase shrink-0 mt-0.5">
+        const div = document.createElement('div');
+        div.className = "flex items-start space-x-3 group";
+        div.innerHTML = `
+          <div class="w-9 h-9 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-xs text-white uppercase shrink-0 overflow-hidden">
             ${msg.sender.charAt(0)}
           </div>
           <div class="flex-1 min-w-0">
             <div class="flex items-center space-x-2">
-              <span class="font-semibold text-sm text-gray-200">${msg.sender}</span>
-              <span class="text-[10px] text-gray-400">${new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              <span class="text-sm font-semibold text-gray-200">${msg.sender}</span>
+              <span class="text-[10px] text-gray-500">${new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
             </div>
-            <p class="text-sm text-gray-300 break-words mt-0.5 whitespace-pre-line">${msg.content}</p>
+            <p class="text-sm text-gray-300 mt-0.5 break-words">${escapeHtml(msg.content)}</p>
           </div>
         `;
-        feed.appendChild(item);
+        feed.appendChild(div);
       });
       feed.scrollTop = feed.scrollHeight;
       lucide.createIcons();
@@ -744,41 +750,51 @@
       const grid = document.getElementById('cardsGrid');
       grid.innerHTML = '';
       if (channelPosts.length === 0) {
-        grid.innerHTML = `<div class="col-span-full text-center py-16 text-gray-500"><i data-lucide="inbox" class="w-12 h-12 mx-auto mb-2 opacity-50"></i><p>No cards created yet.</p></div>`;
-        lucide.createIcons();
+        grid.innerHTML = `<div class="text-xs text-gray-500 col-span-full text-center py-10">No cards in this board yet. Click 'New Card' to create one!</div>`;
         return;
       }
+
       channelPosts.forEach(post => {
         const card = document.createElement('div');
-        card.className = "break-inside-avoid bg-[#2b2d31] rounded-xl p-4 border border-gray-700/40 shadow-md hover:border-gray-600/60 transition duration-200";
-        const reactions = post.reactions || {};
-        const comments = post.comments || [];
-        const canDelete = currentUser === post.user_name || isAdmin();
+        card.className = "bg-[#2b2d31] border border-gray-700/50 rounded-xl p-4 break-inside-avoid flex flex-col justify-between shadow-lg relative group";
+        const canDelete = isAdmin() || post.user_name === currentUser;
+
+        let linkHtml = '';
+        if (post.link) {
+          // 링크 클릭 시 보안 토큰이 자동으로 붙어 열리며, 드래그 및 복사 방지(no-copy) 적용
+          const securedLink = post.link.includes('?') ? post.link + '&token=capper_verified' : post.link + '?token=capper_verified';
+          linkHtml = `
+            <div class="mt-3 pt-3 border-t border-gray-700/40">
+              <a href="${securedLink}" onclick="event.preventDefault(); window.location.href='${securedLink}';" class="no-copy inline-flex items-center space-x-1.5 text-xs text-indigo-400 hover:text-indigo-300 font-medium bg-indigo-500/10 px-3 py-1.5 rounded-lg border border-indigo-500/20 transition cursor-pointer" unselectable="on">
+                <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                <span class="truncate">Play / Open Link</span>
+              </a>
+            </div>
+          `;
+        }
+
+        let imageHtml = '';
+        if (post.image_url) {
+          imageHtml = `<div class="mt-3 rounded-lg overflow-hidden border border-gray-700/40 bg-[#1e1f22]"><img src="${post.image_url}" class="w-full h-auto object-cover max-h-60"/></div>`;
+        }
 
         card.innerHTML = `
-          <div class="flex items-center justify-between mb-3">
-            <div class="flex items-center space-x-2">
-              <div class="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-xs text-white uppercase">${post.user_name.charAt(0)}</div>
-              <span class="font-semibold text-sm text-gray-200">${post.user_name}</span>
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center space-x-2">
+                <div class="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-[10px] text-white uppercase overflow-hidden">
+                  ${post.user_name.charAt(0)}
+                </div>
+                <span class="text-xs font-bold text-gray-200">${post.user_name}</span>
+              </div>
+              ${canDelete ? `<button onclick="deletePost('${post.id}')" class="text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition p-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>` : ''}
             </div>
-            ${canDelete ? `<button onclick="deletePost('${post.id}')" class="text-gray-500 hover:text-red-400 p-1 transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+            <p class="text-sm text-gray-300 whitespace-pre-line break-words leading-relaxed">${escapeHtml(post.content || '')}</p>
+            ${imageHtml}
+            ${linkHtml}
           </div>
-          ${post.content ? `<p class="text-gray-300 text-sm leading-relaxed mb-3 whitespace-pre-line">${post.content}</p>` : ''}
-          ${post.image_url ? `<div class="mb-3 rounded-lg overflow-hidden border border-gray-700/50"><img src="${post.image_url}" class="w-full h-auto object-cover max-h-80" loading="lazy"/></div>` : ''}
-          ${post.link ? `<a href="${post.link}" target="_blank" rel="noopener noreferrer" class="flex items-center space-x-2 p-2.5 rounded-lg bg-[#1e1f22] border border-gray-700/50 hover:border-indigo-500/50 text-indigo-400 text-xs mb-3 transition truncate"><i data-lucide="external-link" class="w-3.5 h-3.5 shrink-0"></i><span class="truncate">${post.link}</span></a>` : ''}
-          <div class="flex flex-wrap gap-1.5 pt-2 border-t border-gray-700/30 mb-3">
-            ${['❤️', '😂', '👍', '🔥'].map(emoji => `
-              <button onclick="toggleReaction('${post.id}', '${emoji}')" class="px-2 py-1 rounded-md bg-[#1e1f22] hover:bg-gray-700/50 text-xs text-gray-300 border border-gray-700/40 flex items-center space-x-1">
-                <span>${emoji}</span><span class="text-[10px] text-gray-400 font-bold">${reactions[emoji] || 0}</span>
-              </button>
-            `).join('')}
-          </div>
-          <div class="space-y-2 pt-1 border-t border-gray-700/20">
-            ${comments.map(c => `<div class="text-xs bg-[#1e1f22]/60 p-2 rounded-lg"><span class="font-bold text-gray-300 mr-1">${c.user_name}:</span><span class="text-gray-400">${c.text}</span></div>`).join('')}
-            <div class="flex space-x-1 mt-2">
-              <input type="text" id="comment-input-${post.id}" placeholder="Add comment..." onkeydown="if(event.key==='Enter') addComment('${post.id}')" class="flex-1 bg-[#1e1f22] text-white text-xs px-2.5 py-1.5 rounded-md border border-gray-700/50 focus:outline-none focus:border-indigo-500">
-              <button onclick="addComment('${post.id}')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1.5 rounded-md text-xs font-medium transition">Post</button>
-            </div>
+          <div class="mt-4 pt-2 text-[10px] text-gray-500 flex justify-end">
+            ${new Date(post.created_at).toLocaleDateString()}
           </div>
         `;
         grid.appendChild(card);
@@ -793,105 +809,89 @@
       if (!content) return;
 
       if (currentDMUser) {
-        const { error } = await sbClient.from('direct_messages').insert([{
+        await sbClient.from('direct_messages').insert([{
           sender: currentUser,
           recipient: currentDMUser,
           content
         }]);
-        if (!error) {
-          input.value = '';
-          loadDMs();
-        }
+        input.value = '';
+        loadDMs();
       } else {
-        const { error } = await sbClient.from('posts').insert([{
+        await sbClient.from('posts').insert([{
           channel_id: currentChannel,
           user_name: currentUser,
-          content,
-          reactions: {},
-          comments: []
+          content
         }]);
-        if (!error) {
-          input.value = '';
-          loadPosts();
-        }
+        input.value = '';
+        loadPosts();
       }
+    }
+
+    function openPostModal() {
+      document.getElementById('postContent').value = '';
+      document.getElementById('postLink').value = '';
+      document.getElementById('postImage').value = '';
+      document.getElementById('postModal').classList.remove('hidden');
+    }
+
+    function closePostModal() {
+      document.getElementById('postModal').classList.add('hidden');
     }
 
     async function submitPost() {
       const content = document.getElementById('postContent').value.trim();
       const link = document.getElementById('postLink').value.trim();
       const imageFile = document.getElementById('postImage').files[0];
-      if (!content && !link && !imageFile) return;
+
+      if (!content && !link && !imageFile) return alert('Add some content, link, or image.');
 
       const btn = document.getElementById('submitPostBtn');
       btn.disabled = true;
       btn.innerText = 'Posting...';
 
-      try {
-        let imageUrl = null;
-        if (imageFile) {
-          const fileExt = imageFile.name.split('.').pop();
-          const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
-          const { error: uploadErr } = await sbClient.storage.from('post-images').upload(fileName, imageFile);
-          if (uploadErr) throw uploadErr;
-          const { data: publicUrlData } = sbClient.storage.from('post-images').getPublicUrl(fileName);
-          imageUrl = publicUrlData.publicUrl;
-        }
+      let imageUrl = null;
+      if (imageFile) {
+        const reader = new FileReader();
+        reader.readAsDataURL(imageFile);
+        await new Promise((resolve) => {
+          reader.onload = () => {
+            imageUrl = reader.result;
+            resolve();
+          };
+        });
+      }
 
-        const { error: insertErr } = await sbClient.from('posts').insert([{
-          channel_id: currentChannel,
-          user_name: currentUser,
-          content: content || null,
-          link: link || null,
-          image_url: imageUrl,
-          reactions: {},
-          comments: []
-        }]);
-        if (insertErr) throw insertErr;
+      const { error } = await sbClient.from('posts').insert([{
+        channel_id: currentChannel,
+        user_name: currentUser,
+        content,
+        link: link || null,
+        image_url: imageUrl
+      }]);
 
+      btn.disabled = false;
+      btn.innerText = 'Post';
+
+      if (error) {
+        alert('Failed to create post: ' + error.message);
+      } else {
         closePostModal();
         loadPosts();
-      } catch (err) {
-        alert('Error: ' + err.message);
-      } finally {
-        btn.disabled = false;
-        btn.innerText = 'Post';
       }
     }
 
     async function deletePost(postId) {
-      if (!confirm('Delete this item?')) return;
-      const { error } = await sbClient.from('posts').delete().eq('id', postId);
-      if (!error) loadPosts();
+      if (!confirm('Are you sure you want to delete this?')) return;
+      if (currentChannelType === 'board' || currentChannelType === 'chat') {
+        const { error } = await sbClient.from('posts').delete().eq('id', postId);
+        if (error) alert('Failed to delete: ' + error.message);
+        else loadPosts();
+      }
     }
 
-    async function toggleReaction(postId, emoji) {
-      const post = channelPosts.find(p => p.id === postId);
-      if (!post) return;
-      const reactions = post.reactions || {};
-      reactions[emoji] = (reactions[emoji] || 0) + 1;
-      const { error } = await sbClient.from('posts').update({ reactions }).eq('id', postId);
-      if (!error) loadPosts();
-    }
-
-    async function addComment(postId) {
-      const input = document.getElementById(`comment-input-${postId}`);
-      const text = input.value.trim();
-      if (!text) return;
-      const post = channelPosts.find(p => p.id === postId);
-      if (!post) return;
-      const comments = post.comments || [];
-      comments.push({ user_name: currentUser, text, created_at: new Date().toISOString() });
-      const { error } = await sbClient.from('posts').update({ comments }).eq('id', postId);
-      if (!error) { input.value = ''; loadPosts(); }
-    }
-
-    function openPostModal() { document.getElementById('postModal').classList.remove('hidden'); }
-    function closePostModal() {
-      document.getElementById('postContent').value = '';
-      document.getElementById('postLink').value = '';
-      document.getElementById('postImage').value = '';
-      document.getElementById('postModal').classList.add('hidden');
+    function escapeHtml(text) {
+      const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+      return text.replace(/[&<>"']/g, m => map[m]);
     }
   </script>
 </body>
