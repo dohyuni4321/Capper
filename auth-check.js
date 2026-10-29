@@ -14,15 +14,15 @@
     // 3. 토큰도 없고 세션 인증도 없는 경우 (무단 접속 차단)
     if (sessionStorage.getItem('capper_auth') !== 'true') {
       document.addEventListener('DOMContentLoaded', () => {
-        // 이미지가 연상시키는 강렬한 빨간색 풀스크린 경고 화면으로 강제 교체
+        // 고딕체 적용 및 버튼 제거된 강렬한 빨간색 풀스크린 경고 화면
         document.body.innerHTML = `
-          <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #f02828; color: white; display: flex; flex-direction: column; justify-content: center; padding: 60px; font-family: 'Noto Sans KR', sans-serif; z-index: 999999; margin: 0; box-sizing: border-box; overflow: hidden;">
+          <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #f02828; color: white; display: flex; flex-direction: column; justify-content: center; padding: 60px; font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; z-index: 999999; margin: 0; box-sizing: border-box; overflow: hidden;">
             
             <div style="display: flex; justify-content: space-between; align-items: flex-end; width: 100%; max-width: 1200px; margin: 0 auto;">
               <div>
-                <h1 style="font-size: 84px; font-weight: 900; margin: 0 0 20px 0; letter-spacing: -2px; line-height: 1.1;">불법접근</h1>
-                <p style="font-size: 32px; font-weight: 500; margin: 0 0 10px 0; line-height: 1.4;">불법 접근이 감지되었습니다.</p>
-                <p style="font-size: 32px; font-weight: 500; margin: 0; line-height: 1.4;">Capper 플랫폼을 통한 접근 이외는 보안 위반으로 간주됩니다.</p>
+                <h1 style="font-size: 84px; font-weight: 900; margin: 0 0 20px 0; letter-spacing: -2px; line-height: 1.1; font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;">불법접근</h1>
+                <p style="font-size: 32px; font-weight: 700; margin: 0 0 10px 0; line-height: 1.4; font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;">불법 접근이 감지되었습니다.</p>
+                <p style="font-size: 32px; font-weight: 700; margin: 0; line-height: 1.4; font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;">Capper 플랫폼을 통한 접근 이외는 보안 위반으로 간주됩니다.</p>
               </div>
 
               <!-- 주의/경고 삼각형 아이콘 -->
@@ -34,13 +34,6 @@
                   <circle cx="12" cy="16.5" r="1.5" fill="white"/>
                 </svg>
               </div>
-            </div>
-
-            <!-- 메인으로 돌아가기 버튼 (필요시 클릭해서 탈출 가능) -->
-            <div style="max-width: 1200px; width: 100%; margin: 40px auto 0 auto;">
-              <a href="https://dohyuni4321.github.io/Capper/" style="background-color: white; color: #f02828; padding: 14px 28px; border-radius: 12px; text-decoration: none; font-size: 18px; font-weight: bold; display: inline-block; box-shadow: 0 10px 20px rgba(0,0,0,0.15);">
-                Capper로 돌아가기
-              </a>
             </div>
 
           </div>
