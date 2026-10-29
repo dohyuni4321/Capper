@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LittleJS 점프맵 게임</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #111;
+            color: #fff;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        #canvas-container {
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+        }
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+            pointer-events: none;
+        }
+        #controls {
+            margin-top: 15px;
+            text-align: center;
+            color: #aaa;
+            font-size: 14px;
+        }
+    </style>
+    <!-- LittleJS Engine CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/littlejsengine@1.6.0/dist/littlejs.js"></script>
+</head>
+<body>
+
+<div id="canvas-container">
+    <div id="ui">점프맵 탈출 | 사망 횟수: <span id="deaths">0</span></div>
+</div>
+<div id="controls">
+    조작법: <b>A / D</b> 또는 <b>좌/우 화살표</b> (이동) | <b>Space</b> 또는 <b>W / 위쪽 화살표</b> (점프)
+</div>
+
+<script>
+'use strict';
+
+// 게임 상태 변수
+let deathCount = 0;
+let player = null;
+let platforms = [];
+let goal = null;
+let hazards = [];
+
+// 플레이어 클래스 Definition
+class Player extends EngineObject {
+    constructor(pos) {
+        super(pos, vec2(0.8, 1.2));
+        this.velocity = vec2(0, 0);
+        this.isGrounded = false;
+        this.moveSpeed = 0.15;
+        this.jumpForce = 0.38;
+        this.color = new Color(0.2, 0.7, 1.0); // 파란색 플레이어
+        this.drawSize = vec2(0.8, 1.2);
+    }
+
+    update() {
+        // 1. 좌우 이동 입력
+        let moveInput = 0;
+        if (keyIsDown('ArrowLeft') || keyIsDown('KeyA')) moveInput -= 1;
+        if (keyIsDown('ArrowRight') || keyIsDown('KeyD')) moveInput += 1;
+
+        this.velocity.x = moveInput * this.moveSpeed;
+
+        // 2. 중력 적용
+        this.velocity.y -= 0.018; // Gravity
+
+        // 3. 점프 입력
+        if (this.isGrounded && (keyWasPressed('Space') || keyWasPressed('KeyW') || keyWasPressed('ArrowUp'))) {
+            this.velocity.y = this.jumpForce;
+            this.isGrounded = false;
+            // 점프 사운드 효과 (LittleJS 내장 사운드 생성기)
+            new Sound([1,.05,280,,.04,.12,1,1.8,,,.2,,,,,,,.5,.05]).play();
+        }
+
+        // 위치 업데이트 전 충돌 감지를 위해 Y축, X축 분리 이동
+        this.isGrounded = false;
+
+        // Y축 이동 및 플랫폼 충돌 처리
+        this.pos.y += this.velocity.y;
+        for (let platform of platforms) {
+            if (isOverlapping(this.pos, this.size, platform.pos, platform.size)) {
+                // 발판 위로 착지하는 경우
+                if (this.velocity.y < 0 && (this.pos.y - this.velocity.y) >= platform.pos.y + platform.size.y / 2) {
+                    this.pos.y = platform.pos.y + platform.size.y / 2 + this.size.y / 2;
+                    this.velocity.y = 0;
+                    this.isGrounded = true;
+                } 
+                // 천장에 머리를 부딪히는 경우
+                else if (this.velocity.y > 0 && (this.pos.y - this.velocity.y) <= platform.pos.y - platform.size.y / 2) {
+                    this.pos.y = platform.pos.y - platform.size.y / 2 - this.size.y / 2;
+                    this.velocity.y = 0;
+                }
+            }
+        }
+
+        // X축 이동 및 충돌 처리
+        this.pos.x += this.velocity.x;
+        for (let platform of platforms) {
+            if (isOverlapping(this.pos, this.size, platform.pos, platform.size)) {
+                if (this.velocity.x > 0) {
+                    this.pos.x = platform.pos.x - platform.size.x / 2 - this.size.x / 2;
+                } else if (this.velocity.x < 0) {
+                    this.pos.x = platform.pos.x + platform.size.x / 2 + this.size.x / 2;
+                }
+            }
+        }
+
+        // 위험 지역(가시/낙사) 감지
+        if (this.pos.y < -2) {
+            this.respawn();
+        }
+        for (let hazard of hazards) {
+            if (isOverlapping(this.pos, this.size, hazard.pos, hazard.size)) {
+                this.respawn();
+                break;
+            }
+        }
+
+        // 골 지점 도달 감지
+        if (goal && isOverlapping(this.pos, this.size, goal.pos, goal.size)) {
+            new Sound([1,.05,520,,.1,.2,1,2.5,,,.4,,,,,,,.8,.1]).play();
+            alert(`🎉 축하합니다! 클리어 하셨습니다!\n총 사망 횟수: ${deathCount}회`);
+            deathCount = 0;
+            document.getElementById('deaths').innerText = deathCount;
+            this.respawn();
+        }
+
+        // 카메라가 플레이어를 부드럽게 추적
+        cameraPos = cameraPos.lerp(this.pos.add(vec2(0, 1.5)), 0.1);
+
+        super.update();
+    }
+
+    render() {
+        // 플레이어 그리드 바운딩 박스 그리기
+        drawRect(this.pos, this.size, this.color);
+    }
+
+    respawn() {
+        this.pos = vec2(2, 2);
+        this.velocity = vec2(0, 0);
+        deathCount++;
+        document.getElementById('deaths').innerText = deathCount;
+        new Sound([1,.05,120,,.08,.2,3,0,,,-0.1,,,,,,.6,.2]).play(); // 사망 사운드
+    }
+}
+
+// 장애물 (가시) 클래스
+class Hazard extends EngineObject {
+    constructor(pos, size) {
+        super(pos, size);
+        this.color = new Color(0.9, 0.2, 0.2); // 빨간색
+    }
+    render() {
+        drawRect(this.pos, this.size, this.color);
+    }
+}
+
+// 목적지 클래스
+class Goal extends EngineObject {
+    constructor(pos) {
+        super(pos, vec2(1.2, 1.2));
+        this.color = new Color(0.2, 0.9, 0.3); // 초록색
+    }
+    render() {
+        drawRect(this.pos, this.size, this.color);
+    }
+}
+
+// 두 객체 간 단순 AABB 충돌 확인 함수
+function isOverlapping(pos1, size1, pos2, size2) {
+    return Math.abs(pos1.x - pos2.x) < (size1.x + size2.x) / 2 &&
+           Math.abs(pos1.y - pos2.y) < (size1.y + size2.y) / 2;
+}
+
+// ---------------------------------------------------------------------------
+// LittleJS Engine 콜백함수 설정
+
+function gameInit() {
+    // 캔버스 및 그래픽 설정
+    canvasFixedSize = vec2(800, 600);
+    cameraScale = 32; // 그리드 크기 조절
+
+    // 맵 배치 설정 (x, y, width, height)
+    const platformData = [
+        // 시작 지점 및 바닥
+        [2, 0.5, 6, 1],
+        [8, 2, 3, 0.8],
+        [13, 3.5, 2.5, 0.8],
+        
+        // 중간 공중 발판들
+        [10, 6, 2, 0.8],
+        [5, 7.5, 2.5, 0.8],
+        [1, 9.5, 2, 0.8],
+        [6, 11.5, 3, 0.8],
+        [11, 13, 2, 0.8],
+        
+        // 최종 도착지 플랫폼
+        [16, 14.5, 5, 1]
+    ];
+
+    // 플랫폼 생성
+    platforms = platformData.map(data => {
+        const p = new EngineObject(vec2(data[0], data[1]), vec2(data[2], data[3]));
+        p.color = new Color(0.4, 0.4, 0.45);
+        p.render = function() { drawRect(this.pos, this.size, this.color); };
+        return p;
+    });
+
+    // 가시/위험 지역 배치
+    hazards = [
+        new Hazard(vec2(8, 2.6), vec2(0.8, 0.4)),
+        new Hazard(vec2(6, 12.1), vec2(1.0, 0.4))
+    ];
+
+    // 골 지점 생성
+    goal = new Goal(vec2(17.5, 16.0));
+
+    // 플레이어 생성
+    player = new Player(vec2(2, 2));
+}
+
+function gameUpdate() {
+    // 엔진 자동 업데이트 처리 사용
+}
+
+function gameUpdatePost() {
+    // 후처리 작업 (필요 시)
+}
+
+function gameRender() {
+    // 배경 그리기
+    drawRect(cameraPos, vec2(100, 100), new Color(0.1, 0.1, 0.15));
+}
+
+function gameRenderPost() {
+    // UI 나 오버레이 그리기 (필요 시)
+}
+
+// Engine 초기화 실행
+engineInit(gameInit, gameUpdate, gameUpdatePost, gameRender, gameRenderPost);
+
+</script>
+</body>
+</html>
