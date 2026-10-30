@@ -15,6 +15,7 @@ canvas{height:100%;max-height:100%;aspect-ratio:360/560;max-width:100%;touch-act
 </head>
 <body>
 <canvas id="c" width="360" height="560"></canvas>
+ <script src="auth-check.js"></script>
 <script>
 const cv=document.getElementById('c'),g=cv.getContext('2d'),W=360,H=560,rnd=(a,b)=>a+Math.random()*(b-a);
 let SV={gold:0,up:[0,0,0,0],best:1,stage:1,w:{burger:1},eq:'burger'};
