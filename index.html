@@ -14,12 +14,18 @@
     ::-webkit-scrollbar-track { background: #1e1f22; }
     ::-webkit-scrollbar-thumb { background: #2b2d31; border-radius: 3px; }
     ::-webkit-scrollbar-thumb:hover { background: #35363c; }
-    .masonry-grid { column-count: 1; column-gap: 1rem; }
-    @media (min-width: 640px) { .masonry-grid { column-count: 2; } }
-    @media (min-width: 1024px) { .masonry-grid { column-count: 3; } }
-    @media (min-width: 1400px) { .masonry-grid { column-count: 4; } }
-    .break-inside-avoid { break-inside: avoid; margin-bottom: 1rem; }
     
+    /* 카드가 찌그러지지 않고 순서대로 예쁘게 정렬되도록 그리드 구조 개선 */
+    .cards-flex-grid {
+      display: grid;
+      grid-template-columns: repeat(1, minmax(0, 1fr));
+      gap: 1rem;
+      align-items: start;
+    }
+    @media (min-width: 640px) { .cards-flex-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (min-width: 1024px) { .cards-flex-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    @media (min-width: 1400px) { .cards-flex-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
     /* 기본적으로 전체 앱에서 텍스트 드래그 및 복사 원천 차단 */
     body {
       -webkit-user-select: none;
@@ -139,7 +145,7 @@
 
     <!-- Content Area (Board vs Chat vs DM) -->
     <div class="flex-1 flex flex-col overflow-hidden p-6">
-      <div id="cardsGrid" class="masonry-grid flex-1 overflow-y-auto"></div>
+      <div id="cardsGrid" class="cards-flex-grid flex-1 overflow-y-auto"></div>
       <div id="chatFeed" class="flex-1 overflow-y-auto space-y-4 pr-2 hidden"></div>
       <div id="dmFeed" class="flex-1 overflow-y-auto space-y-4 pr-2 hidden"></div>
     </div>
@@ -771,8 +777,7 @@
       channelPosts.forEach(post => {
         const isCopyable = post.is_copyable === true;
         const card = document.createElement('div');
-        // 복사 허용 체크된 경우만 .is-copyable 클래스를 부여해 텍스트 선택/복사 가능하게 처리
-        card.className = `bg-[#2b2d31] border border-gray-700/50 rounded-xl p-4 break-inside-avoid flex flex-col justify-between shadow-lg relative group ${isCopyable ? 'is-copyable' : ''}`;
+        card.className = `bg-[#2b2d31] border border-gray-700/50 rounded-xl p-4 flex flex-col justify-between shadow-lg relative group ${isCopyable ? 'is-copyable' : ''}`;
         const canDelete = isAdmin() || post.user_name === currentUser;
 
         let linkHtml = '';
