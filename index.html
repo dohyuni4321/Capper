@@ -15,21 +15,25 @@
     ::-webkit-scrollbar-thumb { background: #2b2d31; border-radius: 3px; }
     ::-webkit-scrollbar-thumb:hover { background: #35363c; }
     
-    /* 빈 공간 없이 카드가 위로 밀착해서 쌓이는 메이슨리 다단 그리드 */
+    /* 빈 공간과 끊김 현상을 완벽히 없애는 플렉스 기반 그리드 레이아웃 */
     .masonry-grid {
-      column-count: 1;
-      column-gap: 1rem;
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: flex-start;
     }
-    @media (min-width: 640px) { .masonry-grid { column-count: 2; } }
-    @media (min-width: 1024px) { .masonry-grid { column-count: 3; } }
-    @media (min-width: 1400px) { .masonry-grid { column-count: 4; } }
-    .break-inside-avoid {
-      break-inside: avoid;
-      -webkit-column-break-inside: avoid;
-      page-break-inside: avoid;
-      margin-bottom: 1rem;
-      display: inline-block;
+    .masonry-grid > div {
       width: 100%;
+    }
+    @media (min-width: 640px) {
+      .masonry-grid > div { width: calc(50% - 0.5rem); }
+    }
+    @media (min-width: 1024px) {
+      .masonry-grid > div { width: calc(33.333% - 0.66rem); }
+    }
+    @media (min-width: 1400px) {
+      .masonry-grid > div { width: calc(25% - 0.75rem); }
     }
 
     /* 기본적으로 전체 앱에서 텍스트 드래그 및 복사 원천 차단 */
@@ -40,12 +44,17 @@
       user-select: none;
     }
     
-    /* 복사가 허용된 카드(is-copyable) 내부만 텍스트 선택 및 복사 허용 */
+    /* 복사가 허용된 카드 내부만 텍스트 선택 및 복사 허용 + 코드/스크립트 서식(줄바꿈) 원본 그대로 유지 */
     .is-copyable, .is-copyable * {
       -webkit-user-select: text !important;
       -moz-user-select: text !important;
       -ms-user-select: text !important;
       user-select: text !important;
+    }
+    .code-content {
+      white-space: pre-wrap;
+      word-break: break-all;
+      font-family: monospace, monospace;
     }
   </style>
 </head>
@@ -282,7 +291,7 @@
       <div class="space-y-3">
         <div>
           <label class="block text-xs font-semibold text-gray-400 mb-1">Content</label>
-          <textarea id="postContent" rows="4" placeholder="Share something..." class="w-full bg-[#1e1f22] text-white p-3 rounded-lg border border-gray-700/60 focus:outline-none focus:border-indigo-500 text-sm resize-none"></textarea>
+          <textarea id="postContent" rows="6" placeholder="Paste your script / code here..." class="w-full bg-[#1e1f22] text-white p-3 rounded-lg border border-gray-700/60 focus:outline-none focus:border-indigo-500 text-sm font-mono resize-none"></textarea>
         </div>
 
         <div>
@@ -783,7 +792,7 @@
       channelPosts.forEach(post => {
         const isCopyable = post.is_copyable === true;
         const card = document.createElement('div');
-        card.className = `bg-[#2b2d31] border border-gray-700/50 rounded-xl p-4 break-inside-avoid flex flex-col justify-between shadow-lg relative group ${isCopyable ? 'is-copyable' : ''}`;
+        card.className = `bg-[#2b2d31] border border-gray-700/50 rounded-xl p-4 flex flex-col justify-between shadow-lg relative group ${isCopyable ? 'is-copyable' : ''}`;
         const canDelete = isAdmin() || post.user_name === currentUser;
 
         let linkHtml = '';
@@ -816,7 +825,7 @@
               </div>
               ${canDelete ? `<button onclick="deletePost('${post.id}')" class="text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition p-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>` : ''}
             </div>
-            <p class="text-sm text-gray-300 whitespace-pre-line break-words leading-relaxed">${escapeHtml(post.content || '')}</p>
+            <p class="text-sm text-gray-300 code-content leading-relaxed">${escapeHtml(post.content || '')}</p>
             ${imageHtml}
             ${linkHtml}
           </div>
@@ -867,12 +876,12 @@
     }
 
     async function submitPost() {
-      const content = document.getElementById('postContent').value.trim();
+      const content = document.getElementById('postContent').value;
       const link = document.getElementById('postLink').value.trim();
       const imageFile = document.getElementById('postImage').files[0];
       const isCopyable = document.getElementById('postIsCopyable').checked;
 
-      if (!content && !link && !imageFile) return alert('Add some content, link, or image.');
+      if (!content.trim() && !link && !imageFile) return alert('Add some content, link, or image.');
 
       const btn = document.getElementById('submitPostBtn');
       btn.disabled = true;
@@ -893,7 +902,7 @@
       const { error } = await sbClient.from('posts').insert([{
         channel_id: currentChannel,
         user_name: currentUser,
-        content,
+        content: content,
         link: link || null,
         image_url: imageUrl,
         is_copyable: isCopyable
