@@ -158,7 +158,7 @@
     <!-- Chat / DM Input Bar -->
     <div id="chatInputArea" class="p-4 bg-[#313338] border-t border-[#202225] hidden">
       <form onsubmit="sendMessage(event)" class="flex items-center space-x-2 bg-[#383a40] px-4 py-2.5 rounded-lg border border-gray-700/40">
-        <input type="text" id="chatMessageInput" placeholder="Send a message..." class="flex-1 bg-transparent text-white text-sm focus:outline-none">
+        <input type="text" id="chatMessageInput" placeholder="Send a message... (Admin: /clear [count])" class="flex-1 bg-transparent text-white text-sm focus:outline-none">
         <button type="submit" class="text-indigo-400 hover:text-indigo-300 p-1">
           <i data-lucide="send" class="w-5 h-5"></i>
         </button>
@@ -197,10 +197,9 @@
     </div>
   </div>
 
-  <!-- VIEW USER PROFILE MODAL (상대방 프로필 크게 보기) -->
+  <!-- VIEW USER PROFILE MODAL -->
   <div id="viewProfileModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-[#2b2d31] p-6 rounded-3xl w-full max-w-sm border border-gray-700/50 shadow-2xl text-center relative overflow-hidden">
-      <!-- 배경 장식용 배너 -->
       <div class="absolute top-0 left-0 right-0 h-24 bg-gradient-to-r from-indigo-600 to-purple-600"></div>
       
       <button onclick="closeViewProfileModal()" class="absolute top-3 right-3 text-white/80 hover:text-white bg-black/30 hover:bg-black/50 p-1.5 rounded-full transition z-10">
@@ -352,7 +351,7 @@
     let channelPosts = [];
     let dmMessages = [];
     let unlockedChannels = new Set();
-    let usersAvatarMap = {}; // 유저별 아바타 및 상태 캐시 맵
+    let usersAvatarMap = {};
 
     function isAdmin() {
       return currentUser && currentUser.toLowerCase() === 'capper';
@@ -937,6 +936,32 @@
         input.value = '';
         loadDMs();
       } else {
+        // 관리자 명령어 검사: /clear [갯수] (Discord 스타일 채팅 채널에서만 동작)
+        if (isAdmin() && currentChannelType === 'chat' && content.startsWith('/clear')) {
+          const parts = content.split(/\s+/);
+          const count = parseInt(parts[1], 10);
+          input.value = '';
+
+          if (isNaN(count) || count <= 0) {
+            alert('Usage: /clear [count] (e.g. /clear 10)');
+            return;
+          }
+
+          // 최신순으로 정렬된 현재 채널 메시지들 중 최신 count개 가져오기
+          const { data: postsToDelete } = await sbClient.from('posts')
+            .select('id')
+            .eq('channel_id', currentChannel)
+            .order('created_at', { ascending: false })
+            .limit(count);
+
+          if (postsToDelete && postsToDelete.length > 0) {
+            const ids = postsToDelete.map(p => p.id);
+            await sbClient.from('posts').delete().in('id', ids);
+            loadPosts();
+          }
+          return;
+        }
+
         await sbClient.from('posts').insert([{
           channel_id: currentChannel,
           user_name: currentUser,
