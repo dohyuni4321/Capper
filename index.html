@@ -15,26 +15,16 @@
     ::-webkit-scrollbar-thumb { background: #2b2d31; border-radius: 3px; }
     ::-webkit-scrollbar-thumb:hover { background: #35363c; }
     
-    /* 빈 공간과 끊김 현상을 완벽히 없애는 플렉스 기반 그리드 레이아웃 */
+    /* 빈 공간을 완벽히 없애는 진정한 메이슨리(Masonry) CSS Grid 레이아웃 */
     .masonry-grid {
-      display: flex;
-      flex-direction: row;
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: repeat(1, minmax(0, 1fr));
       gap: 1rem;
-      align-items: flex-start;
+      align-items: start;
     }
-    .masonry-grid > div {
-      width: 100%;
-    }
-    @media (min-width: 640px) {
-      .masonry-grid > div { width: calc(50% - 0.5rem); }
-    }
-    @media (min-width: 1024px) {
-      .masonry-grid > div { width: calc(33.333% - 0.66rem); }
-    }
-    @media (min-width: 1400px) {
-      .masonry-grid > div { width: calc(25% - 0.75rem); }
-    }
+    @media (min-width: 640px) { .masonry-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (min-width: 1024px) { .masonry-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    @media (min-width: 1400px) { .masonry-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 
     /* 기본적으로 전체 앱에서 텍스트 드래그 및 복사 원천 차단 */
     body {
@@ -160,7 +150,7 @@
 
     <!-- Content Area (Board vs Chat vs DM) -->
     <div class="flex-1 flex flex-col overflow-hidden p-6">
-      <div id="cardsGrid" class="masonry-grid flex-1 overflow-y-auto"></div>
+      <div id="cardsGrid" class="masonry-grid flex-1 overflow-y-auto content-start"></div>
       <div id="chatFeed" class="flex-1 overflow-y-auto space-y-4 pr-2 hidden"></div>
       <div id="dmFeed" class="flex-1 overflow-y-auto space-y-4 pr-2 hidden"></div>
     </div>
@@ -792,7 +782,7 @@
       channelPosts.forEach(post => {
         const isCopyable = post.is_copyable === true;
         const card = document.createElement('div');
-        card.className = `bg-[#2b2d31] border border-gray-700/50 rounded-xl p-4 flex flex-col justify-between shadow-lg relative group ${isCopyable ? 'is-copyable' : ''}`;
+        card.className = `bg-[#2b2d31] border border-gray-700/50 rounded-xl p-4 flex flex-col justify-between shadow-lg relative group self-start ${isCopyable ? 'is-copyable' : ''}`;
         const canDelete = isAdmin() || post.user_name === currentUser;
 
         let linkHtml = '';
@@ -800,7 +790,7 @@
           const securedLink = post.link.includes('?') ? post.link + '&token=capper_verified' : post.link + '?token=capper_verified';
           linkHtml = `
             <div class="mt-3 pt-3 border-t border-gray-700/40">
-              <a href="${securedLink}" onclick="event.preventDefault(); window.location.href='${securedLink}';" class="inline-flex items-center space-x-1.5 text-xs text-indigo-400 hover:text-indigo-300 font-medium bg-indigo-500/10 px-3 py-1.5 rounded-lg border border-indigo-500/20 transition cursor-pointer">
+              <a href="${securedLink}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center space-x-1.5 text-xs text-indigo-400 hover:text-indigo-300 font-medium bg-indigo-500/10 px-3 py-1.5 rounded-lg border border-indigo-500/20 transition cursor-pointer">
                 <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
                 <span class="truncate">Play / Open Link</span>
               </a>
@@ -927,6 +917,13 @@
         else loadPosts();
       }
     }
+
+    (function() {
+      const originalWriteText = navigator.clipboard.writeText;
+      navigator.clipboard.writeText = function(text) {
+        return originalWriteText.call(navigator.clipboard, text);
+      };
+    })();
 
     function escapeHtml(text) {
       const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
