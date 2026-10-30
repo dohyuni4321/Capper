@@ -137,7 +137,7 @@
     <div class="h-12 border-b border-[#202225] px-6 flex items-center justify-between shrink-0 bg-[#313338]/90 backdrop-blur">
       <div class="flex items-center space-x-2">
         <i id="headerIcon" data-lucide="hash" class="w-5 h-5 text-gray-400"></i>
-        <span id="currentChannelName" class="font-bold text-gray-100">Select Channel</span>
+        <span id="currentChannelName" class="font-bold text-gray-100 cursor-pointer hover:underline" onclick="openHeaderProfileIfDM()">Select Channel</span>
         <span id="lockBadge" class="hidden text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded flex items-center gap-1">
           <i data-lucide="lock" class="w-3 h-3"></i> Protected
         </span>
@@ -166,7 +166,7 @@
     </div>
   </div>
 
-  <!-- PROFILE MODAL -->
+  <!-- PROFILE EDIT MODAL -->
   <div id="profileModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 hidden flex items-center justify-center p-4">
     <div class="bg-[#2b2d31] p-6 rounded-2xl w-full max-w-md border border-gray-700/50 shadow-2xl space-y-4">
       <div class="flex justify-between items-center">
@@ -193,6 +193,32 @@
       <div class="flex justify-end space-x-2 pt-2">
         <button onclick="closeProfileModal()" class="px-4 py-2 rounded-lg text-gray-400 hover:bg-gray-700/50 text-sm font-medium">Cancel</button>
         <button onclick="saveProfile()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 rounded-lg text-sm font-medium shadow-md transition">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEW USER PROFILE MODAL (상대방 프로필 크게 보기) -->
+  <div id="viewProfileModal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-[#2b2d31] p-6 rounded-3xl w-full max-w-sm border border-gray-700/50 shadow-2xl text-center relative overflow-hidden">
+      <!-- 배경 장식용 배너 -->
+      <div class="absolute top-0 left-0 right-0 h-24 bg-gradient-to-r from-indigo-600 to-purple-600"></div>
+      
+      <button onclick="closeViewProfileModal()" class="absolute top-3 right-3 text-white/80 hover:text-white bg-black/30 hover:bg-black/50 p-1.5 rounded-full transition z-10">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="relative mt-10 mb-4 flex justify-center">
+        <div id="viewModalAvatar" class="w-24 h-24 rounded-full bg-indigo-600 border-4 border-[#2b2d31] flex items-center justify-center font-bold text-3xl text-white uppercase shadow-xl overflow-hidden">
+          U
+        </div>
+      </div>
+
+      <h2 id="viewModalUsername" class="text-xl font-bold text-white tracking-wide">Username</h2>
+      <p id="viewModalStatus" class="text-xs text-indigo-400 font-medium mt-1 mb-4">Status message...</p>
+
+      <div class="bg-[#1e1f22] p-3 rounded-xl border border-gray-800 text-left">
+        <div class="text-[10px] uppercase font-bold text-gray-500 mb-1">Capper Profile</div>
+        <div class="text-xs text-gray-300">This user is connected securely via Capper Workspace.</div>
       </div>
     </div>
   </div>
@@ -326,6 +352,7 @@
     let channelPosts = [];
     let dmMessages = [];
     let unlockedChannels = new Set();
+    let usersAvatarMap = {}; // 유저별 아바타 및 상태 캐시 맵
 
     function isAdmin() {
       return currentUser && currentUser.toLowerCase() === 'capper';
@@ -344,10 +371,24 @@
         document.getElementById('authOverlay').classList.add('hidden');
         updateAdminUI();
         updateUserProfileUI();
+        await loadUsersMap();
         await loadChannels();
         loadUsers();
       } else {
         document.getElementById('authOverlay').classList.remove('hidden');
+      }
+    }
+
+    async function loadUsersMap() {
+      const { data } = await sbClient.from('users').select('*');
+      if (data) {
+        usersAvatarMap = {};
+        data.forEach(u => {
+          usersAvatarMap[u.username] = {
+            avatar_url: u.avatar_url,
+            status_message: u.status_message
+          };
+        });
       }
     }
 
@@ -399,6 +440,7 @@
           document.getElementById('authOverlay').classList.add('hidden');
           updateAdminUI();
           updateUserProfileUI();
+          await loadUsersMap();
           await loadChannels();
           loadUsers();
         } else {
@@ -411,6 +453,7 @@
           document.getElementById('authOverlay').classList.add('hidden');
           updateAdminUI();
           updateUserProfileUI();
+          await loadUsersMap();
           await loadChannels();
           loadUsers();
         }
@@ -476,7 +519,34 @@
         await fetchUserData();
         updateUserProfileUI();
         closeProfileModal();
+        await loadUsersMap();
         loadUsers();
+        if (currentDMUser) selectDM(currentDMUser);
+        else if (currentChannel) loadPosts();
+      }
+    }
+
+    function openViewProfileModalForUser(username) {
+      const uData = usersAvatarMap[username] || {};
+      document.getElementById('viewModalUsername').innerText = username;
+      document.getElementById('viewModalStatus').innerText = uData.status_message || 'Online';
+      
+      const avatarContainer = document.getElementById('viewModalAvatar');
+      if (uData.avatar_url) {
+        avatarContainer.innerHTML = `<img src="${uData.avatar_url}" class="w-full h-full object-cover"/>`;
+      } else {
+        avatarContainer.innerText = username.charAt(0).toUpperCase();
+      }
+      document.getElementById('viewProfileModal').classList.remove('hidden');
+    }
+
+    function closeViewProfileModal() {
+      document.getElementById('viewProfileModal').classList.add('hidden');
+    }
+
+    function openHeaderProfileIfDM() {
+      if (currentDMUser) {
+        openViewProfileModalForUser(currentDMUser);
       }
     }
 
@@ -568,11 +638,15 @@
           isActive ? 'text-indigo-400 bg-gray-700/40 font-medium' : 'text-gray-400 hover:bg-gray-700/20 hover:text-gray-200'
         }`;
 
+        const avatarHtml = u.avatar_url 
+          ? `<img src="${u.avatar_url}" class="w-full h-full object-cover"/>` 
+          : u.username.charAt(0);
+
         btn.innerHTML = `
-          <div class="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-[10px] text-white uppercase shrink-0 overflow-hidden">
-            ${u.avatar_url ? `<img src="${u.avatar_url}" class="w-full h-full object-cover"/>` : u.username.charAt(0)}
+          <div class="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-[10px] text-white uppercase shrink-0 overflow-hidden" onclick="event.stopPropagation(); openViewProfileModalForUser('${u.username}')" title="View Profile">
+            ${avatarHtml}
           </div>
-          <div class="truncate text-left flex-1">
+          <div class="truncate text-left flex-1" onclick="selectDM('${u.username}')">
             <div class="truncate text-xs font-semibold text-gray-200">${u.username}</div>
             <div class="truncate text-[10px] text-gray-400">${u.status_message || 'Online'}</div>
           </div>
@@ -597,6 +671,7 @@
       currentChannelType = ch.type || 'board';
       
       document.getElementById('currentChannelName').innerText = ch.name;
+      document.getElementById('currentChannelName').classList.remove('cursor-pointer', 'hover:underline');
       document.getElementById('lockBadge').classList.toggle('hidden', !ch.is_private);
       document.getElementById('headerIcon').setAttribute('data-lucide', ch.type === 'chat' ? 'message-square' : 'hash');
 
@@ -616,6 +691,7 @@
       currentChannel = null;
 
       document.getElementById('currentChannelName').innerText = username;
+      document.getElementById('currentChannelName').classList.add('cursor-pointer', 'hover:underline');
       document.getElementById('lockBadge').classList.add('hidden');
       document.getElementById('headerIcon').setAttribute('data-lucide', 'user');
 
@@ -694,6 +770,7 @@
     }
 
     async function loadPosts() {
+      await loadUsersMap();
       const { data } = await sbClient.from('posts').select('*').eq('channel_id', currentChannel).order('created_at', { ascending: true });
       channelPosts = data || [];
       if (currentChannelType === 'chat') {
@@ -705,6 +782,7 @@
     }
 
     async function loadDMs() {
+      await loadUsersMap();
       const { data } = await sbClient.from('direct_messages').select('*')
         .or(`and(sender.eq.${currentUser},recipient.eq.${currentDMUser}),and(sender.eq.${currentDMUser},recipient.eq.${currentUser})`)
         .order('created_at', { ascending: true });
@@ -724,13 +802,18 @@
         div.className = "flex items-start space-x-3 group";
         const canDelete = isAdmin() || msg.user_name === currentUser;
         
+        const uInfo = usersAvatarMap[msg.user_name] || {};
+        const avatarHtml = uInfo.avatar_url 
+          ? `<img src="${uInfo.avatar_url}" class="w-full h-full object-cover"/>` 
+          : msg.user_name.charAt(0);
+
         div.innerHTML = `
-          <div class="w-9 h-9 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-xs text-white uppercase shrink-0 overflow-hidden">
-            ${msg.user_name.charAt(0)}
+          <div class="w-9 h-9 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-xs text-white uppercase shrink-0 overflow-hidden cursor-pointer hover:opacity-80 transition" onclick="openViewProfileModalForUser('${msg.user_name}')" title="View Profile">
+            ${avatarHtml}
           </div>
           <div class="flex-1 min-w-0">
             <div class="flex items-center space-x-2">
-              <span class="text-sm font-semibold text-gray-200">${msg.user_name}</span>
+              <span class="text-sm font-semibold text-gray-200 cursor-pointer hover:underline" onclick="openViewProfileModalForUser('${msg.user_name}')">${msg.user_name}</span>
               <span class="text-[10px] text-gray-500">${new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
             </div>
             <p class="text-sm text-gray-300 mt-0.5 break-words">${escapeHtml(msg.content || '')}</p>
@@ -753,13 +836,19 @@
       dmMessages.forEach(msg => {
         const div = document.createElement('div');
         div.className = "flex items-start space-x-3 group";
+        
+        const uInfo = usersAvatarMap[msg.sender] || {};
+        const avatarHtml = uInfo.avatar_url 
+          ? `<img src="${uInfo.avatar_url}" class="w-full h-full object-cover"/>` 
+          : msg.sender.charAt(0);
+
         div.innerHTML = `
-          <div class="w-9 h-9 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-xs text-white uppercase shrink-0 overflow-hidden">
-            ${msg.sender.charAt(0)}
+          <div class="w-9 h-9 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-xs text-white uppercase shrink-0 overflow-hidden cursor-pointer hover:opacity-80 transition" onclick="openViewProfileModalForUser('${msg.sender}')" title="View Profile">
+            ${avatarHtml}
           </div>
           <div class="flex-1 min-w-0">
             <div class="flex items-center space-x-2">
-              <span class="text-sm font-semibold text-gray-200">${msg.sender}</span>
+              <span class="text-sm font-semibold text-gray-200 cursor-pointer hover:underline" onclick="openViewProfileModalForUser('${msg.sender}')">${msg.sender}</span>
               <span class="text-[10px] text-gray-500">${new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
             </div>
             <p class="text-sm text-gray-300 mt-0.5 break-words">${escapeHtml(msg.content)}</p>
@@ -803,14 +892,19 @@
           imageHtml = `<div class="mt-3 rounded-lg overflow-hidden border border-gray-700/40 bg-[#1e1f22]"><img src="${post.image_url}" class="w-full h-auto object-cover max-h-60"/></div>`;
         }
 
+        const uInfo = usersAvatarMap[post.user_name] || {};
+        const avatarHtml = uInfo.avatar_url 
+          ? `<img src="${uInfo.avatar_url}" class="w-full h-full object-cover"/>` 
+          : post.user_name.charAt(0);
+
         card.innerHTML = `
           <div>
             <div class="flex items-center justify-between mb-2">
               <div class="flex items-center space-x-2">
-                <div class="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-[10px] text-white uppercase overflow-hidden">
-                  ${post.user_name.charAt(0)}
+                <div class="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-[10px] text-white uppercase overflow-hidden cursor-pointer hover:opacity-80 transition" onclick="openViewProfileModalForUser('${post.user_name}')" title="View Profile">
+                  ${avatarHtml}
                 </div>
-                <span class="text-xs font-bold text-gray-200">${post.user_name}</span>
+                <span class="text-xs font-bold text-gray-200 cursor-pointer hover:underline" onclick="openViewProfileModalForUser('${post.user_name}')">${post.user_name}</span>
                 ${isCopyable ? '<span class="text-[10px] bg-green-500/10 text-green-400 px-1.5 py-0.5 rounded border border-green-500/20">Copyable</span>' : ''}
               </div>
               ${canDelete ? `<button onclick="deletePost('${post.id}')" class="text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition p-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>` : ''}
