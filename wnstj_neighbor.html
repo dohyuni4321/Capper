@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>wnstj : FAT NEIGHBOR - KILO-STRIKE (패스트푸드 도어맨 슈퍼 에디션)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&family=Jua&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Noto Sans KR', 'sans-serif'],
+                        title: ['Black Han Sans', 'sans-serif'],
+                        sub: ['Do Hyeon', 'sans-serif'],
+                        jua: ['Jua', 'sans-serif']
+                    },
+                    colors: {
+                        wnstj: {
+                            mustard: '#f59e0b',
+                            ketchup: '#ef4444',
+                            darkRed: '#7f1d1d',
+                            darkBg: '#0b090a',
+                            panelBg: '#161214',
+                            paper: '#fef3c7',
+                            paperText: '#1c1917'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Modern Dark Glassmorphism & High Juiciness Glow */
+        .glass-card {
+            background: rgba(22, 18, 20, 0.88);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+        }
+
+        .neon-border-ketchup {
+            border-color: #ef4444;
+            box-shadow: 0 0 25px rgba(239, 68, 68, 0.35);
+        }
+
+        .neon-border-mustard {
+            border-color: #f59e0b;
+            box-shadow: 0 0 25px rgba(245, 158, 11, 0.35);
+        }
+
+        /* Screen Shake Physics */
+        @keyframes screen-shake {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            15% { transform: translate(-12px, 8px) rotate(-1.5deg); }
+            30% { transform: translate(12px, -8px) rotate(1.5deg); }
+            45% { transform: translate(-8px, -6px) rotate(-1deg); }
+            60% { transform: translate(8px, 6px) rotate(1deg); }
+            75% { transform: translate(-4px, 2px) rotate(0deg); }
+            100% { transform: translate(0, 0) rotate(0deg); }
+        }
+        .shake-active {
+            animation: screen-shake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+        }
+
+        /* Avatar Spring Animations */
+        @keyframes belly-bounce {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-6px) scale(1.02, 0.98); }
+        }
+        .bouncy-avatar {
+            animation: belly-bounce 2.8s ease-in-out infinite;
+            transform-origin: bottom center;
+        }
+
+        @keyframes press-slam-mega {
+            0% { transform: translateY(-130%) scale(0.8); opacity: 0; }
+            60% { transform: translateY(5%) scale(1.08, 0.92); opacity: 1; }
+            80% { transform: translateY(-2%) scale(0.98, 1.02); opacity: 1; }
+            100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+        .press-anim-mega {
+            animation: press-slam-mega 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        /* UV Scanner Filter */
+        .uv-active {
+            filter: hue-rotate(240deg) brightness(1.3) contrast(1.4);
+            box-shadow: inset 0 0 40px #8b5cf6;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #f59e0b; border-radius: 4px; }
+    </style>
+</head>
+<body id="game-body" class="bg-wnstj-darkBg text-amber-100 font-sans min-h-screen flex flex-col justify-between overflow-x-hidden select-none relative">
+
+    <!-- TOP HEADER / METRICS BAR -->
+    <header class="bg-gradient-to-r from-wnstj-darkRed via-stone-900 to-wnstj-darkRed border-b-2 border-amber-500/50 px-6 py-3 flex justify-between items-center z-20 shadow-2xl">
+        <div class="flex items-center space-x-3">
+            <span class="bg-amber-500 text-stone-950 font-title px-3 py-1 rounded-xl text-xs tracking-wider uppercase shadow-lg animate-pulse">wnstj DELUXE GATE</span>
+            <h1 class="text-xl md:text-2xl font-title text-amber-400 tracking-wide drop-shadow">
+                wnstj: FAT NEIGHBOR - KILO-STRIKE
+                <span class="text-xs text-red-400 font-sub block md:inline font-normal md:ml-2">(무한 디럭스 에디션)</span>
+            </h1>
+        </div>
+        
+        <!-- Score, Combo & Progress -->
+        <div class="flex items-center space-x-4">
+            <div class="flex items-center gap-2 bg-black/60 px-3 py-1.5 rounded-2xl border border-amber-500/30 font-sub text-xs text-amber-300">
+                <span>모드:</span>
+                <select id="mode-select" onchange="changeGameMode(this.value)" class="bg-stone-900 text-amber-400 font-bold px-2 py-0.5 rounded border border-amber-500/40 focus:outline-none">
+                    <option value="story">스토리 모드 (10명)</option>
+                    <option value="endless">무한 모드 (Endless)</option>
+                </select>
+            </div>
+
+            <div class="hidden sm:flex items-center gap-3 bg-black/60 px-4 py-1.5 rounded-2xl border border-amber-500/30 font-sub text-xs text-amber-300">
+                <div>점수: <span id="score-val" class="text-amber-400 font-title text-base">0</span></div>
+                <div class="h-4 w-px bg-stone-700"></div>
+                <div>콤보: <span id="combo-val" class="text-emerald-400 font-title text-base">x0</span></div>
+            </div>
+
+            <div id="stat-progress" class="bg-black/80 px-4 py-1.5 rounded-2xl border border-amber-500/40 font-sub text-xs text-amber-300 shadow-inner">
+                이웃: <span id="current-visitor-idx" class="text-white text-base font-bold">1</span> / <span id="total-visitor-count">10</span>
+            </div>
+
+            <button id="btn-sound-toggle" onclick="toggleAudio()" class="px-3 py-1.5 bg-stone-800 hover:bg-stone-700 rounded-xl border border-amber-500/40 text-xs font-bold text-amber-300 transition shadow">
+                🔊 사운드 ON
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN GAME VIEWPORT -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-3 md:p-5 grid grid-cols-1 lg:grid-cols-12 gap-5 z-10">
+        
+        <!-- LEFT COLUMN: SECURITY MONITOR & INVESTIGATION TOOLS (7 COLS) -->
+        <section class="lg:col-span-7 flex flex-col gap-4">
+            
+            <!-- Monitor Viewport (Diner Security Camera Portal) -->
+            <div id="monitor-box" class="relative glass-card rounded-3xl neon-border-mustard overflow-hidden flex flex-col justify-between items-center h-80 md:h-96 transition-all duration-300">
+                
+                <!-- Status Bar Top -->
+                <div class="w-full bg-stone-950/90 border-b border-amber-500/30 px-4 py-2 flex justify-between items-center z-20 text-xs font-sub">
+                    <span class="text-amber-400 flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                        CAM-01 : 버거 타워 1층 입구 보안 터미널
+                    </span>
+                    <div class="flex items-center gap-2">
+                        <span id="uv-badge" class="hidden text-purple-300 bg-purple-950 px-2 py-0.5 rounded border border-purple-500/50 text-[10px] font-bold">UV LIGHT ACTIVE</span>
+                        <span id="scanner-status" class="text-amber-300 bg-amber-950/80 px-2.5 py-0.5 rounded border border-amber-500/30">CALORIE SENSOR ON</span>
+                    </div>
+                </div>
+
+                <!-- Shutter Door Animation Overlay -->
+                <div id="shutter" class="absolute inset-x-0 top-0 h-0 bg-stone-950 border-b-4 border-amber-500 z-30 transition-all duration-500 flex flex-col items-center justify-center text-center">
+                    <span class="text-amber-400 font-title text-3xl tracking-wider animate-pulse">GATE SHUTTER CLOSED</span>
+                    <span class="text-amber-200/70 font-sub text-sm mt-1">다음 칼로리 이웃을 검문용 카메라 앞으로 불러오는 중...</span>
+                </div>
+
+                <!-- MEGA BURGER PRESS EXECUTION OVERLAY -->
+                <div id="burger-press-overlay" class="hidden absolute inset-0 bg-red-950/95 z-40 flex-col items-center justify-center text-center p-6 backdrop-blur-md">
+                    <div id="press-graphic" class="press-anim-mega flex flex-col items-center">
+                        <div class="text-8xl mb-2 filter drop-shadow-2xl animate-bounce">🍔🔨</div>
+                        <div class="text-4xl md:text-6xl font-title text-amber-400 drop-shadow-lg">FAT BURGER BUST!</div>
+                        <div class="text-base md:text-lg font-sub text-amber-100 mt-2 max-w-md">10톤 칼로리 프레스가 동작하여 도플갱어를 바삭한 참깨 패티로 만들어버렸습니다!</div>
+                    </div>
+                </div>
+
+                <!-- Visitor Avatar Display (PERFECTLY CENTERED WITH PHYSICS) -->
+                <div id="avatar-container" class="relative w-full flex-1 flex items-end justify-center bg-gradient-to-b from-stone-950 via-stone-900 to-stone-950 overflow-hidden">
+                    <!-- Particle Sparks Container -->
+                    <div id="particle-canvas" class="absolute inset-0 pointer-events-none"></div>
+
+                    <svg id="visitor-svg" viewBox="0 0 300 240" class="w-full h-full max-w-[350px] max-h-[260px] mx-auto drop-shadow-2xl bouncy-avatar">
+                        <!-- Dynamic SVG avatar injected here -->
+                    </svg>
+                </div>
+
+                <!-- Dialogue & Interrogation Bar -->
+                <div class="w-full bg-stone-950/95 border-t border-amber-500/30 p-3.5 z-20 flex flex-col gap-2.5">
+                    <div id="dialogue-box" class="bg-black/90 text-amber-200 border border-amber-500/40 rounded-2xl px-4 py-2.5 text-sm font-jua min-h-[52px] flex items-center justify-between shadow-inner">
+                        <span id="dialogue-text">"안녕하세요~ 버거 타워 제 집으로 돌아왔는데요..."</span>
+                        
+                        <!-- Live Digital Scale Gauge -->
+                        <div id="scale-gauge" class="ml-2 bg-red-950/90 text-red-300 px-3 py-1 rounded-xl text-xs border border-red-700/60 flex-shrink-0 font-bold flex items-center gap-1.5 shadow">
+                            <span>⚖️ 실측 체중:</span>
+                            <b id="live-weight" class="text-amber-300 text-sm">??? kg</b>
+                        </div>
+                    </div>
+
+                    <!-- Interactive Investigation Buttons -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs font-sub">
+                        <button onclick="askQuestion('id')" class="bg-stone-800 hover:bg-stone-700 text-amber-200 py-2.5 rounded-xl border border-amber-500/30 transition shadow flex items-center justify-center gap-1 active:scale-95">
+                            🆔 서류 확인
+                        </button>
+                        <button onclick="askQuestion('quiz')" class="bg-stone-800 hover:bg-stone-700 text-amber-200 py-2.5 rounded-xl border border-amber-500/30 transition shadow flex items-center justify-center gap-1 active:scale-95">
+                            🍔 버거 취향 질문
+                        </button>
+                        <button onclick="askQuestion('weight')" class="bg-stone-800 hover:bg-stone-700 text-amber-200 py-2.5 rounded-xl border border-amber-500/30 transition shadow flex items-center justify-center gap-1 active:scale-95">
+                            ⚖️ 체중 불일치 추궁
+                        </button>
+                        <button onclick="toggleUVScanner()" id="btn-uv" class="bg-purple-950 hover:bg-purple-900 text-purple-200 py-2.5 rounded-xl border border-purple-500/40 transition shadow flex items-center justify-center gap-1 active:scale-95">
+                            🔮 UV 스캐너
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Desk Controls: Phone & Decision Action Buttons -->
+            <div class="glass-card rounded-3xl p-4 shadow-2xl grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                <!-- Rotary Diner Phone Interface -->
+                <div class="bg-black/50 p-3.5 rounded-2xl border border-amber-500/20 flex flex-col justify-between gap-2.5">
+                    <div class="flex justify-between items-center border-b border-amber-500/20 pb-1.5">
+                        <h3 class="text-amber-400 font-sub text-sm flex items-center gap-1.5">
+                            <span>☎️ 다이너 회전식 세대 전화기</span>
+                        </h3>
+                        <span class="text-[11px] text-amber-200/60">동호수 집 안 통화</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <input type="text" id="phone-input" placeholder="호수 입력 (예: 101)" class="w-full bg-stone-900 border border-amber-500/40 text-amber-300 font-title px-3 py-1.5 rounded-xl text-center focus:outline-none focus:border-amber-400 text-sm">
+                        <button onclick="makePhoneCall()" class="bg-amber-600 hover:bg-amber-500 text-stone-950 font-title px-4 py-1.5 rounded-xl text-sm transition shadow active:scale-95">
+                            발신
+                        </button>
+                    </div>
+                    <div id="phone-result" class="text-xs font-jua text-amber-200/90 bg-stone-950/80 p-2.5 rounded-xl border border-stone-800 min-h-[42px] flex items-center">
+                        호수를 입력하고 전화를 걸어 실제 세대원 유무를 제보받으세요.
+                    </div>
+                </div>
+
+                <!-- Decision Action Buttons -->
+                <div class="bg-black/50 p-3.5 rounded-2xl border border-amber-500/20 flex flex-col justify-between gap-2.5">
+                    <div class="border-b border-amber-500/20 pb-1.5">
+                        <h3 class="text-amber-400 font-sub text-sm">🚨 최종 출입 판정 (Execution Controls)</h3>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2.5 h-full">
+                        <button onclick="approveVisitor()" class="bg-emerald-700 hover:bg-emerald-600 border border-emerald-400/60 text-white font-title text-base rounded-2xl py-3 flex flex-col items-center justify-center shadow-lg transition active:scale-95">
+                            <span>입장 승인</span>
+                            <span class="text-[10px] font-sans font-normal opacity-90">(DELIVERY OK)</span>
+                        </button>
+                        <button onclick="bustVisitor()" class="bg-red-700 hover:bg-red-600 border border-amber-300/60 text-amber-100 font-title text-base rounded-2xl py-3 flex flex-col items-center justify-center shadow-lg transition active:scale-95">
+                            <span>출입 거부 (프레스)</span>
+                            <span class="text-[10px] font-sans font-normal opacity-90">(FAT BURGER BUST)</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- RIGHT COLUMN: DOCUMENTS & RESIDENT DIRECTORY (5 COLS) -->
+        <section class="lg:col-span-5 flex flex-col gap-4">
+            
+            <div class="glass-card rounded-3xl p-4 shadow-2xl flex flex-col gap-4 flex-1">
+                
+                <!-- Tab Switching Bar -->
+                <div class="flex gap-2 border-b border-amber-500/20 pb-2.5 font-sub text-sm">
+                    <button id="tab-btn-id" onclick="switchTab('id')" class="flex-1 py-2 bg-amber-600 text-stone-950 font-bold rounded-xl transition shadow">
+                        📜 신분증 & 칼로리 영수증
+                    </button>
+                    <button id="tab-btn-folder" onclick="switchTab('folder')" class="flex-1 py-2 bg-stone-800 text-amber-300 rounded-xl transition hover:bg-stone-700 shadow">
+                        📋 아파트 거주자 명부
+                    </button>
+                </div>
+
+                <!-- TAB 1: ID Card & Delivery Receipt -->
+                <div id="tab-content-id" class="flex flex-col gap-4">
+                    
+                    <!-- ID Card Document -->
+                    <div id="id-card-element" class="bg-wnstj-paper text-wnstj-paperText p-4 rounded-2xl border-2 border-amber-800/70 shadow-xl relative overflow-hidden font-jua transition-all duration-300">
+                        
+                        <!-- ID Header -->
+                        <div class="flex justify-between items-start border-b border-amber-900/30 pb-2 mb-3">
+                            <div>
+                                <span class="text-[11px] font-bold text-red-800 uppercase tracking-wider">wnstj 버거 타워 주민 신분증</span>
+                                <div class="text-xs text-stone-600">ID No. 1955-BURG-<span id="doc-id-num">101</span></div>
+                            </div>
+                            <span id="doc-id-seal" class="text-[11px] bg-red-800 text-amber-100 px-2.5 py-0.5 rounded font-bold shadow">DDD 정품 직인</span>
+                        </div>
+
+                        <!-- ID Body (Portrait & Biometrics) -->
+                        <div class="grid grid-cols-3 gap-3 items-center">
+                            <!-- Framed Portrait Photo -->
+                            <div class="col-span-1 bg-stone-300/90 border border-amber-900/50 rounded-xl h-28 flex flex-col items-center justify-center text-center p-1 relative overflow-hidden shadow-inner" id="doc-id-photo-box">
+                                <svg id="doc-portrait-svg" viewBox="0 0 100 100" class="w-full h-full">
+                                    <!-- Dynamic ID Portrait SVG -->
+                                </svg>
+                                <span class="absolute bottom-1 text-[8px] bg-black/70 text-white px-1 rounded">biometric photo</span>
+                            </div>
+
+                            <!-- Biometric Attributes -->
+                            <div class="col-span-2 text-xs flex flex-col gap-1.5">
+                                <div class="flex justify-between border-b border-amber-900/10 pb-0.5">
+                                    <span class="text-stone-600">성명:</span>
+                                    <b id="doc-name" class="text-sm text-black">김빅맥</b>
+                                </div>
+                                <div class="flex justify-between border-b border-amber-900/10 pb-0.5">
+                                    <span class="text-stone-600">거주 동호수:</span>
+                                    <b id="doc-room" class="text-stone-900">101호</b>
+                                </div>
+                                <div class="flex justify-between border-b border-amber-900/10 pb-0.5">
+                                    <span class="text-stone-600">등록 체중:</span>
+                                    <b id="doc-weight" class="text-red-700 font-bold text-sm">165 kg</b>
+                                </div>
+                                <div class="flex justify-between border-b border-amber-900/10 pb-0.5">
+                                    <span class="text-stone-600">키 / 특징:</span>
+                                    <span id="doc-feature" class="text-stone-800 text-[11px]">178cm / 안경 착용</span>
+                                </div>
+                                <div class="flex justify-between pt-0.5">
+                                    <span class="text-stone-600">유효기간:</span>
+                                    <span id="doc-expiry" class="font-bold text-stone-900">1955-12</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Fast Food Calorie Receipt -->
+                    <div class="bg-white text-stone-900 p-4 rounded-2xl border border-stone-300 font-mono text-xs shadow-xl relative">
+                        <div class="text-center font-bold border-b border-dashed border-stone-400 pb-1.5 mb-2.5 text-stone-800">
+                            *** wnstj CALORIE DELIVERY RECEIPT ***
+                        </div>
+                        <div class="flex justify-between mb-1 text-stone-700">
+                            <span>주문자: <b id="rec-name" class="text-black">김빅맥</b></span>
+                            <span>배달지: <b id="rec-room" class="text-black">101호</b></span>
+                        </div>
+                        <div class="border-y border-dashed border-stone-300 py-2 my-2 flex justify-between font-bold text-red-700 text-sm">
+                            <span>주문 메뉴:</span>
+                            <span id="rec-menu" class="text-right">트리플 치즈 버거 세트</span>
+                        </div>
+                        <div class="flex justify-between text-[11px] text-stone-600 mb-1">
+                            <span>총 칼로리: <b id="rec-calories">8,500 kcal</b></span>
+                            <span>배달 상태: <b class="text-emerald-700">출입문 대기 중</b></span>
+                        </div>
+                        <div class="text-[10px] text-stone-400 text-center mt-2 pt-1 border-t border-stone-100">
+                            ※ 본 영수증은 1955년 D.D.D. 패스트푸드 안전 규정을 준수합니다.
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- TAB 2: Resident Directory (주민 명부) -->
+                <div id="tab-content-folder" class="hidden flex-col gap-3 max-h-[420px] overflow-y-auto custom-scrollbar pr-1">
+                    <div class="text-xs text-amber-300 font-sub">아파트 공식 거주자 장부 (등록 체중 및 최애 버거 대조용)</div>
+                    <div id="resident-list-box" class="flex flex-col gap-2.5">
+                        <!-- Dynamic resident items -->
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- END EVALUATION MODAL (S ~ F Rank) -->
+    <div id="ending-modal" class="hidden fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4 backdrop-blur-md">
+        <div class="bg-stone-900 border-2 border-amber-500 rounded-3xl p-6 md:p-8 max-w-lg w-full text-center shadow-2xl flex flex-col items-center gap-5">
+            <div id="ending-badge" class="text-6xl font-title text-amber-400 animate-bounce">
+                👑 S급
+            </div>
+            <h2 id="ending-title" class="text-2xl md:text-3xl font-title text-white">
+                "전설의 칼로리 수호자"
+            </h2>
+            <div id="ending-desc" class="text-sm font-jua text-amber-200/90 bg-black/70 p-4 rounded-2xl border border-amber-500/30 leading-relaxed">
+                모든 가짜 도플갱어를 사전에 완벽히 차단하고 버거 타워의 진짜 묵직한 이웃들을 안전하게 지켜냈습니다!
+            </div>
+            
+            <!-- Summary Stats Grid -->
+            <div class="w-full bg-stone-950 border border-stone-800 rounded-2xl p-4 text-xs font-sub grid grid-cols-2 gap-3 text-left">
+                <div>최종 점수: <b id="stat-score" class="text-amber-400 text-sm">0</b>점</div>
+                <div>최고 콤보: <b id="stat-combo" class="text-emerald-400 text-sm">0</b>회</div>
+                <div>도플갱어 퇴치: <b id="stat-busted" class="text-emerald-400 text-sm">0</b>명</div>
+                <div>무고한 주민 통과: <b id="stat-passed" class="text-amber-300 text-sm">0</b>명</div>
+                <div>실수사살 주민: <b id="stat-killed" class="text-red-400 text-sm">0</b>명</div>
+                <div>침투 도플갱어: <b id="stat-escaped" class="text-red-500 text-sm">0</b>명</div>
+            </div>
+
+            <button onclick="resetGame()" class="w-full bg-amber-500 hover:bg-amber-400 text-stone-950 font-title py-3.5 rounded-2xl text-lg transition shadow-xl active:scale-95">
+                🔄 새로 시작하기 (Replay)
+            </button>
+        </div>
+    </div>
+
+    <!-- APPLICATION SCRIPT & GAME ENGINE -->
+    <script>
+        // --- GLOBAL GAME STATE & AUDIO DECLARATIONS ---
+        let audioEnabled = true;
+        let audioCtx = null;
+        let activeVisitor = null;
+        let currentIdx = 0;
+        let score = 0;
+        let combo = 0;
+        let maxCombo = 0;
+        let uvActive = false;
+        let stats = { busted: 0, passed: 0, killed: 0, escaped: 0 };
+
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) {
+                    audioCtx = new AudioContext();
+                }
+            }
+        }
+
+        // --- EXPANDED RESIDENT DIRECTORY DATA (12 UNIQUE CHARACTERS) ---
+        const RESIDENT_DIRECTORY = [
+            { room: "101", name: "김빅맥", weight: 165, favorite: "트리플 치즈 버거", feature: "178cm / 안경 착용", photoType: "fat_guy1" },
+            { room: "102", name: "박튀김", weight: 140, favorite: "대왕 감자튀김", feature: "170cm / 모자 착용", photoType: "french_fry_wizard" },
+            { room: "201", name: "최콜라", weight: 180, favorite: "제로 칼로리 소다", feature: "182cm / 수염 있음", photoType: "alien_slime" },
+            { room: "202", name: "정치즈", weight: 195, favorite: "치즈 퐁듀 버거", feature: "175cm / 곱슬머리", photoType: "burger_queen" },
+            { room: "301", name: "강너겟", weight: 155, favorite: "치킨 너겟 50조각", feature: "168cm / 투구 착용", photoType: "nugget_knight" },
+            { room: "302", name: "이피자", weight: 210, favorite: "페퍼로니 폭탄 피자", feature: "185cm / 이중턱 거구", photoType: "pizza_monster" },
+            { room: "401", name: "윤쉐이크", weight: 172, favorite: "초코 밀크쉐이크", feature: "173cm / 보라색 가발", photoType: "shake_alien" },
+            { room: "402", name: "송핫도그", weight: 160, favorite: "점보 머스타드 핫도그", feature: "180cm / 선글라스", photoType: "hotdog_man" },
+            { room: "501", name: "한산타", weight: 220, favorite: "바비큐 치킨 폭탄", feature: "176cm / 산타 모자", photoType: "fat_santa" },
+            { room: "502", name: "배버킷", weight: 188, favorite: "딥치즈 양념치킨", feature: "181cm / 양파링 귀걸이", photoType: "cheese_bucket" },
+            { room: "601", name: "조돈까스", weight: 190, favorite: "왕 왕 돈까스", feature: "179cm / 노란 캡모자", photoType: "king_boss" },
+            { room: "602", name: "임와플", weight: 148, favorite: "메이플 버터 와플", feature: "165cm / 리본 장식", photoType: "waffle_gal" }
+        ];
+
+        // --- EXPANDED VISITORS POOL ---
+        const VISITORS_BASE_POOL = [
+            {
+                isDoppelganger: false,
+                room: "101", name: "김빅맥", weight: 165, liveWeight: 165,
+                favorite: "트리플 치즈 버거", orderMenu: "트리플 치즈 버거 3세트", calories: "8,500 kcal",
+                idExpiry: "1955-12", idSeal: "DDD 정품 직인", isSealFake: false, feature: "178cm / 안경 착용",
+                quizResponse: "노란 치즈가 폭발하는 트리플 치즈 버거죠!", weightFlaw: false, avatarType: "fat_guy1"
+            },
+            {
+                isDoppelganger: true,
+                room: "102", name: "박튀김", weight: 140, liveWeight: 45,
+                favorite: "대왕 감자튀김", orderMenu: "대왕 감자튀김 곱빼기", calories: "4,200 kcal",
+                idExpiry: "1955-12", idSeal: "DDD 정품 직인", isSealFake: false, feature: "170cm / 모자 착용",
+                quizResponse: "갓 튀겨낸 바삭한 감자튀김이 최고입니다.", weightFlaw: true, flawType: "weight", avatarType: "french_fry_wizard"
+            },
+            {
+                isDoppelganger: true,
+                room: "201", name: "최콜라", weight: 180, liveWeight: 180,
+                favorite: "제로 칼로리 소다", orderMenu: "제로 칼로리 소다 5페트", calories: "0 kcal",
+                idExpiry: "1955-12", idSeal: "DDD 정품 직인", isSealFake: false, feature: "182cm / 수염 있음",
+                quizResponse: "제 최애 요리는 오가닉 채소 샐러드와 증류수입니다!", flawType: "quiz", avatarType: "alien_slime"
+            },
+            {
+                isDoppelganger: false,
+                room: "202", name: "정치즈", weight: 195, liveWeight: 195,
+                favorite: "치즈 퐁듀 버거", orderMenu: "치즈 퐁듀 버거 딥세트", calories: "12,000 kcal",
+                idExpiry: "1955-12", idSeal: "DDD 정품 직인", isSealFake: false, feature: "175cm / 곱슬머리",
+                quizResponse: "치즈 퐁듀의 고소함 없이는 하루도 못 살아요!", avatarType: "burger_queen"
+            },
+            {
+                isDoppelganger: true,
+                room: "301", name: "강너겟", weight: 155, liveWeight: 155,
+                favorite: "치킨 너겟 50조각", orderMenu: "치킨 너겟 50조각 세트", calories: "6,800 kcal",
+                idExpiry: "1974-15", idSeal: "위조 직인 (FAKE)", isSealFake: true, feature: "168cm / 투구 착용",
+                quizResponse: "바삭한 치킨 너겟 50조각입니다!", flawType: "id", avatarType: "nugget_knight"
+            },
+            {
+                isDoppelganger: false,
+                room: "302", name: "이피자", weight: 210, liveWeight: 210,
+                favorite: "페퍼로니 폭탄 피자", orderMenu: "패밀리 페퍼로니 피자 2판", calories: "14,500 kcal",
+                idExpiry: "1955-12", idSeal: "DDD 정품 직인", isSealFake: false, feature: "185cm / 이중턱 거구",
+                quizResponse: "페퍼로니가 타이어처럼 깔린 피자가 진리입니다!", avatarType: "pizza_monster"
+            },
+            {
+                isDoppelganger: true,
+                room: "401", name: "윤쉐이크", weight: 172, liveWeight: 172,
+                favorite: "초코 밀크쉐이크", orderMenu: "초코 밀크쉐이크 대용량", calories: "5,000 kcal",
+                idExpiry: "1955-12", idSeal: "위조 직인 (FAKE)", isSealFake: true, feature: "173cm / 보라색 가발",
+                quizResponse: "달콤 시원한 초코 밀크쉐이크죠!", flawType: "id", avatarType: "shake_alien"
+            },
+            {
+                isDoppelganger: false,
+                room: "402", name: "송핫도그", weight: 160, liveWeight: 160,
+                favorite: "점보 머스타드 핫도그", orderMenu: "점보 핫도그 5개 세트", calories: "7,200 kcal",
+                idExpiry: "1955-12", idSeal: "DDD 정품 직인", isSealFake: false, feature: "180cm / 선글라스",
+                quizResponse: "소시지가 터질 듯한 핫도그 맛을 잊을 수 없죠!", avatarType: "hotdog_man"
+            },
+            {
+                isDoppelganger: true,
+                room: "501", name: "한산타", weight: 220, liveWeight: 60,
+                favorite: "바비큐 치킨 폭탄", orderMenu: "바비큐 치킨 3마리", calories: "11,000 kcal",
+                idExpiry: "1955-12", idSeal: "DDD 정품 직인", isSealFake: false, feature: "176cm / 산타 모자",
+                quizResponse: "허허! 바비큐 치킨이 제 최애 음식입니다!", weightFlaw: true, flawType: "weight", avatarType: "fat_santa"
+            },
+            {
+                isDoppelganger: false,
+                room: "502", name: "배버킷", weight: 188, liveWeight: 188,
+                favorite: "딥치즈 양념치킨", orderMenu: "딥치즈 양념치킨 패밀리 버킷", calories: "13,200 kcal",
+                idExpiry: "1955-12", idSeal: "DDD 정품 직인", isSealFake: false, feature: "181cm / 양파링 귀걸이",
+                quizResponse: "버킷에 담긴 양념치킨이 최고죠!", avatarType: "cheese_bucket"
+            },
+            {
+                isDoppelganger: true,
+                room: "601", name: "조돈까스", weight: 190, liveWeight: 190,
+                favorite: "왕 왕 돈까스", orderMenu: "대왕 돈까스 곱빼기", calories: "9,800 kcal",
+                idExpiry: "1955-12", idSeal: "DDD 정품 직인", isSealFake: false, feature: "179cm / 노란 캡모자",
+                quizResponse: "저는 평소에 공기만 먹고 사는데요?", flawType: "quiz", avatarType: "king_boss"
+            },
+            {
+                isDoppelganger: false,
+                room: "602", name: "임와플", weight: 148, liveWeight: 148,
+                favorite: "메이플 버터 와플", orderMenu: "메이플 버터 와플 10장", calories: "6,500 kcal",
+                idExpiry: "1955-12", idSeal: "DDD 정품 직인", isSealFake: false, feature: "165cm / 리본 장식",
+                quizResponse: "달콤한 메이플 시럽이 듬뿍 뿌려진 와플이 좋아요!", avatarType: "waffle_gal"
+            }
+        ];
+
+        let gameMode = 'story';
+        let currentVisitorsList = [...VISITORS_BASE_POOL];
+
+        // --- UNIFIED & MATCHED SVG AVATAR RENDERER (FIXED) ---
+        function renderAvatar(type, isPortrait = false) {
+            const targetId = isPortrait ? 'doc-portrait-svg' : 'visitor-svg';
+            const svg = document.getElementById(targetId);
+            if (!svg) return;
+
+            let innerHtml = '';
+
+            if (isPortrait) {
+                // Mini ID Photo Portrait SVG
+                switch (type) {
+                    case 'french_fry_wizard':
+                        innerHtml = `<circle cx="50" cy="50" r="30" fill="#fbcfe8"/><polygon points="35,30 50,10 65,30" fill="#f59e0b"/><circle cx="42" cy="48" r="3" fill="#000"/><circle cx="58" cy="48" r="3" fill="#000"/><path d="M 42 62 Q 50 70 58 62" stroke="#7f1d1d" stroke-width="2" fill="none"/>`;
+                        break;
+                    case 'alien_slime':
+                        innerHtml = `<path d="M 25 75 Q 20 28 50 18 Q 80 28 75 75 Z" fill="#22c55e" /><circle cx="40" cy="38" r="5" fill="#fff"/><circle cx="40" cy="38" r="2" fill="#000"/><circle cx="50" cy="28" r="7" fill="#fff"/><circle cx="50" cy="28" r="2.5" fill="#000"/><circle cx="60" cy="38" r="5" fill="#fff"/><circle cx="60" cy="38" r="2" fill="#000"/>`;
+                        break;
+                    case 'burger_queen':
+                        innerHtml = `<circle cx="50" cy="50" r="28" fill="#fde047"/><path d="M 35 30 L 42 15 L 50 25 L 58 15 L 65 30 Z" fill="#f59e0b"/><circle cx="42" cy="46" r="3" fill="#000"/><circle cx="58" cy="46" r="3" fill="#000"/>`;
+                        break;
+                    case 'nugget_knight':
+                        innerHtml = `<circle cx="50" cy="50" r="28" fill="#d97706"/><rect x="35" y="38" width="30" height="12" rx="3" fill="#64748b"/>`;
+                        break;
+                    case 'pizza_monster':
+                        innerHtml = `<polygon points="20,80 50,20 80,80" fill="#f59e0b"/><circle cx="40" cy="55" r="5" fill="#b91c1c"/><circle cx="60" cy="65" r="6" fill="#b91c1c"/>`;
+                        break;
+                    case 'shake_alien':
+                        innerHtml = `<circle cx="50" cy="50" r="26" fill="#c084fc"/><circle cx="50" cy="46" r="7" fill="#000"/><circle cx="50" cy="44" r="2" fill="#fff"/>`;
+                        break;
+                    case 'hotdog_man':
+                        innerHtml = `<rect x="35" y="25" width="30" height="50" rx="15" fill="#f59e0b"/><rect x="42" y="20" width="16" height="60" rx="8" fill="#b91c1c"/>`;
+                        break;
+                    case 'fat_santa':
+                        innerHtml = `<circle cx="50" cy="50" r="28" fill="#fca5a5"/><path d="M 30 35 Q 50 10 70 35 Z" fill="#dc2626"/><path d="M 32 55 Q 50 75 68 55 Z" fill="#fff"/>`;
+                        break;
+                    case 'cheese_bucket':
+                        innerHtml = `<circle cx="50" cy="50" r="28" fill="#fde047"/><circle cx="38" cy="52" r="6" fill="#f59e0b"/><circle cx="62" cy="52" r="6" fill="#f59e0b"/>`;
+                        break;
+                    case 'king_boss':
+                        innerHtml = `<circle cx="50" cy="50" r="30" fill="#fdba74"/><rect x="30" y="25" width="40" height="8" fill="#eab308" rx="2"/>`;
+                        break;
+                    case 'waffle_gal':
+                        innerHtml = `<circle cx="50" cy="50" r="26" fill="#fef08a"/><path d="M 35 42 L 65 42 M 35 58 L 65 58 M 42 35 L 42 65 M 58 35 L 58 65" stroke="#d97706" stroke-width="1.5"/>`;
+                        break;
+                    default:
+                        innerHtml = `<circle cx="50" cy="42" r="26" fill="#e0ac69" /><ellipse cx="50" cy="78" rx="36" ry="22" fill="#7f1d1d" /><circle cx="41" cy="38" r="3.5" fill="#000"/><circle cx="59" cy="38" r="3.5" fill="#000"/><path d="M 42 50 Q 50 58 58 50" stroke="#000" stroke-width="2.5" fill="none" />`;
+                        break;
+                }
+            } else {
+                // Main Viewport Centered Camera Avatars (ViewBox 0 0 300 240)
+                switch (type) {
+                    case 'french_fry_wizard':
+                        innerHtml = `<ellipse cx="150" cy="210" rx="90" ry="55" fill="#b91c1c" /><circle cx="150" cy="120" r="65" fill="#fbcfe8" /><polygon points="120,60 150,10 180,60" fill="#f59e0b" /><rect x="135" y="20" width="8" height="40" fill="#ef4444" /><circle cx="130" cy="110" r="7" fill="#000"/><circle cx="170" cy="110" r="7" fill="#000"/><path d="M 130 145 Q 150 165 170 145" stroke="#7f1d1d" stroke-width="5" fill="none" />`;
+                        break;
+                    case 'burger_queen':
+                        innerHtml = `<ellipse cx="150" cy="215" rx="95" ry="60" fill="#be123c" /><circle cx="150" cy="125" r="68" fill="#fde047" /><path d="M 110 70 L 130 35 L 150 60 L 170 35 L 190 70 Z" fill="#f59e0b" stroke="#78350f" stroke-width="3" /><circle cx="130" cy="115" r="8" fill="#000"/><circle cx="170" cy="115" r="8" fill="#000"/><path d="M 135 150 Q 150 170 165 150" stroke="#000" stroke-width="4" fill="none" />`;
+                        break;
+                    case 'alien_slime':
+                        innerHtml = `<path d="M 70 230 Q 60 80 150 50 Q 240 80 230 230 Z" fill="#22c55e" /><circle cx="125" cy="100" r="12" fill="#fff"/><circle cx="125" cy="100" r="5" fill="#000"/><circle cx="150" cy="75" r="16" fill="#fff"/><circle cx="150" cy="75" r="6" fill="#000"/><circle cx="175" cy="100" r="12" fill="#fff"/><circle cx="175" cy="100" r="5" fill="#000"/><path d="M 130 140 Q 150 165 170 140" stroke="#facc15" stroke-width="7" fill="none" stroke-linecap="round"/>`;
+                        break;
+                    case 'nugget_knight':
+                        innerHtml = `<ellipse cx="150" cy="210" rx="85" ry="55" fill="#475569" /><circle cx="150" cy="120" r="60" fill="#d97706" /><rect x="110" y="80" width="80" height="35" rx="8" fill="#64748b" /><line x1="120" y1="98" x2="180" y2="98" stroke="#fef08a" stroke-width="4" />`;
+                        break;
+                    case 'pizza_monster':
+                        innerHtml = `<polygon points="70,220 150,50 230,220" fill="#f59e0b" /><circle cx="120" cy="130" r="14" fill="#b91c1c" /><circle cx="170" cy="150" r="16" fill="#b91c1c" /><circle cx="140" cy="180" r="12" fill="#b91c1c" /><circle cx="130" cy="110" r="6" fill="#fff"/><circle cx="130" cy="110" r="2" fill="#000"/><circle cx="170" cy="110" r="6" fill="#fff"/><circle cx="170" cy="110" r="2" fill="#000"/>`;
+                        break;
+                    case 'shake_alien':
+                        innerHtml = `<path d="M 80 230 Q 70 90 150 60 Q 230 90 220 230 Z" fill="#c084fc" /><circle cx="150" cy="100" r="25" fill="#a855f7" /><circle cx="150" cy="95" r="12" fill="#000"/><circle cx="150" cy="92" r="4" fill="#fff"/><path d="M 130 145 Q 150 160 170 145" stroke="#fff" stroke-width="4" fill="none" />`;
+                        break;
+                    case 'hotdog_man':
+                        innerHtml = `<rect x="100" y="70" width="100" height="150" rx="45" fill="#f59e0b" /><rect x="120" y="60" width="60" height="160" rx="30" fill="#b91c1c" /><path d="M 125 70 Q 150 210 175 70" stroke="#facc15" stroke-width="8" fill="none" /><circle cx="135" cy="105" r="6" fill="#000"/><circle cx="165" cy="105" r="6" fill="#000"/>`;
+                        break;
+                    case 'fat_santa':
+                        innerHtml = `<ellipse cx="150" cy="210" rx="100" ry="60" fill="#dc2626" /><circle cx="150" cy="120" r="65" fill="#fca5a5" /><path d="M 100 80 Q 150 20 200 80 Z" fill="#dc2626" /><circle cx="200" cy="80" r="10" fill="#fff" /><path d="M 110 130 Q 150 180 190 130 Z" fill="#fff" />`;
+                        break;
+                    case 'cheese_bucket':
+                        innerHtml = `<ellipse cx="150" cy="210" rx="90" ry="50" fill="#eab308" /><circle cx="150" cy="120" r="65" fill="#fde047" /><circle cx="120" cy="125" r="14" fill="#f59e0b" /><circle cx="180" cy="125" r="14" fill="#f59e0b" /><circle cx="132" cy="110" r="7" fill="#000"/><circle cx="168" cy="110" r="7" fill="#000"/>`;
+                        break;
+                    case 'king_boss':
+                        innerHtml = `<ellipse cx="150" cy="210" rx="105" ry="65" fill="#15803d" /><circle cx="150" cy="115" r="70" fill="#fdba74" /><rect x="100" y="60" width="100" height="20" fill="#eab308" rx="5" /><circle cx="125" cy="105" r="9" fill="#000"/><circle cx="175" cy="105" r="9" fill="#000"/><path d="M 125 145 Q 150 170 175 145" stroke="#78350f" stroke-width="6" fill="none" />`;
+                        break;
+                    case 'waffle_gal':
+                        innerHtml = `<ellipse cx="150" cy="210" rx="85" ry="55" fill="#db2777" /><circle cx="150" cy="120" r="62" fill="#fef08a" /><path d="M 110 100 L 190 100 M 110 120 L 190 120 M 130 80 L 130 140 M 170 80 L 170 140" stroke="#d97706" stroke-width="3" /><circle cx="135" cy="110" r="6" fill="#000"/><circle cx="165" cy="110" r="6" fill="#000"/>`;
+                        break;
+                    default:
+                        innerHtml = `<ellipse cx="150" cy="210" rx="100" ry="60" fill="#7f1d1d" /><circle cx="150" cy="120" r="70" fill="#e0ac69" /><circle cx="128" cy="110" r="8" fill="#000"/><circle cx="172" cy="110" r="8" fill="#000"/><circle cx="130" cy="108" r="2.5" fill="#fff"/><circle cx="174" cy="108" r="2.5" fill="#fff"/><path d="M 130 140 Q 150 160 170 140" stroke="#000" stroke-width="5" fill="none" stroke-linecap="round" /><path d="M 105 75 L 195 75 L 180 40 L 120 40 Z" fill="#f59e0b" /><rect x="100" y="75" width="100" height="12" rx="4" fill="#d97706" />`;
+                        break;
+                }
+            }
+
+            // SVG 내부 그래픽 주입 후 강제 리플로우(Reflow)로 렌더링 확정
+            svg.innerHTML = innerHtml;
+            void svg.offsetWidth;
+        }
+
+        // --- LOAD VISITOR ---
+        function loadVisitor(idx) {
+            if (idx >= currentVisitorsList.length) {
+                showEnding();
+                return;
+            }
+
+            activeVisitor = currentVisitorsList[idx];
+            document.getElementById('current-visitor-idx').innerText = idx + 1;
+            
+            const shutter = document.getElementById('shutter');
+            shutter.style.height = '100%';
+
+            setTimeout(() => {
+                // 셔터가 내려간 후 아바타 그래픽 주입
+                renderAvatar(activeVisitor.avatarType, false);
+                renderAvatar(activeVisitor.avatarType, true);
+
+                document.getElementById('live-weight').innerText = `${activeVisitor.liveWeight} kg`;
+                document.getElementById('dialogue-text').innerText = `"안녕하세요~ ${activeVisitor.room}호 ${activeVisitor.name}입니다! 배달된 버거 먹으러 왔어요."`;
+                
+                // ID Card details
+                document.getElementById('doc-id-num').innerText = activeVisitor.room;
+                document.getElementById('doc-name').innerText = activeVisitor.name;
+                document.getElementById('doc-room').innerText = `${activeVisitor.room}호`;
+                document.getElementById('doc-weight').innerText = `${activeVisitor.weight} kg`;
+                document.getElementById('doc-feature').innerText = activeVisitor.feature;
+                document.getElementById('doc-expiry').innerText = activeVisitor.idExpiry;
+                
+                const sealEl = document.getElementById('doc-id-seal');
+                sealEl.innerText = activeVisitor.idSeal;
+                sealEl.className = activeVisitor.isSealFake 
+                    ? "text-[11px] bg-purple-900 text-purple-200 px-2.5 py-0.5 rounded font-bold shadow border border-purple-400" 
+                    : "text-[11px] bg-red-800 text-amber-100 px-2.5 py-0.5 rounded font-bold shadow";
+
+                // Receipt details
+                document.getElementById('rec-name').innerText = activeVisitor.name;
+                document.getElementById('rec-room').innerText = `${activeVisitor.room}호`;
+                document.getElementById('rec-menu').innerText = activeVisitor.orderMenu;
+                document.getElementById('rec-calories').innerText = activeVisitor.calories;
+
+                document.getElementById('phone-result').innerText = "호수를 입력하고 전화를 걸어 세대 거주자 상태를 확인하세요.";
+                document.getElementById('phone-input').value = "";
+
+                shutter.style.height = '0%';
+                playSound('beep');
+            }, 250);
+        }
+
+        function changeGameMode(mode) {
+            gameMode = mode;
+            if (mode === 'endless') {
+                document.getElementById('total-visitor-count').innerText = "∞";
+                currentVisitorsList = Array.from({ length: 50 }, () => {
+                    const randomBase = VISITORS_BASE_POOL[Math.floor(Math.random() * VISITORS_BASE_POOL.length)];
+                    return { ...randomBase };
+                });
+            } else {
+                document.getElementById('total-visitor-count').innerText = "10";
+                currentVisitorsList = VISITORS_BASE_POOL.slice(0, 10);
+            }
+            resetGame();
+        }
+
+        function playSound(type) {
+            if (!audioEnabled) return;
+            initAudio();
+            if (audioCtx.state === 'suspended') { audioCtx.resume(); }
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'beep') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, now);
+                gain.gain.setValueAtTime(0.08, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+                osc.start(now); osc.stop(now + 0.08);
+            } else if (type === 'phone') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(440, now);
+                osc.frequency.setValueAtTime(480, now + 0.1);
+                gain.gain.setValueAtTime(0.12, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+            } else if (type === 'bust') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(160, now);
+                osc.frequency.exponentialRampToValueAtTime(25, now + 0.5);
+                gain.gain.setValueAtTime(0.35, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+                osc.start(now); osc.stop(now + 0.5);
+            } else if (type === 'pass') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now);
+                osc.frequency.setValueAtTime(659.25, now + 0.12);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+            } else if (type === 'uv') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(1200, now);
+                osc.frequency.exponentialRampToValueAtTime(300, now + 0.15);
+                gain.gain.setValueAtTime(0.06, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+                osc.start(now); osc.stop(now + 0.15);
+            }
+        }
+
+        function triggerScreenShake() {
+            const body = document.getElementById('game-body');
+            body.classList.remove('shake-active');
+            void body.offsetWidth;
+            body.classList.add('shake-active');
+        }
+
+        function toggleAudio() {
+            audioEnabled = !audioEnabled;
+            document.getElementById('btn-sound-toggle').innerText = audioEnabled ? "🔊 사운드 ON" : "🔇 사운드 OFF";
+        }
+
+        // --- RENDER RESIDENT DIRECTORY ---
+        function renderResidentDirectory() {
+            const listEl = document.getElementById('resident-list-box');
+            listEl.innerHTML = '';
+            RESIDENT_DIRECTORY.forEach(res => {
+                const item = document.createElement('div');
+                item.className = 'bg-stone-900 border border-amber-500/20 rounded-2xl p-3 text-xs flex justify-between items-center shadow-sm';
+                item.innerHTML = `
+                    <div>
+                        <span class="text-amber-400 font-bold text-sm">[${res.room}호] ${res.name}</span>
+                        <div class="text-stone-400 text-[11px] mt-0.5">최애 메뉴: ${res.favorite}</div>
+                        <div class="text-stone-500 text-[10px]">특징: ${res.feature}</div>
+                    </div>
+                    <div class="text-right">
+                        <span class="bg-red-950/80 text-red-300 px-2.5 py-1 rounded-xl font-bold border border-red-800/60 shadow">${res.weight} kg</span>
+                    </div>
+                `;
+                listEl.appendChild(item);
+            });
+        }
+
+        // --- INTERROGATION ---
+        function askQuestion(type) {
+            playSound('beep');
+            const dText = document.getElementById('dialogue-text');
+            if (type === 'id') {
+                dText.innerText = `"여기 신분증이랑 영수증 멀쩡히 제출했잖아요! 빨리 문 열어주세요."`;
+            } else if (type === 'quiz') {
+                dText.innerText = `"${activeVisitor.quizResponse}"`;
+            } else if (type === 'weight') {
+                if (activeVisitor.weightFlaw) {
+                    dText.innerText = `"어... 체중계가 고장났나 보네요! 제가 최근에 다이어트를 해서 급빠졌습니다..." (식은땀 흘림)`;
+                } else {
+                    dText.innerText = `"무슨 소리예요! 제 체중은 주민표랑 신분증에 적힌 그대로 묵직합니다!"`;
+                }
+            }
+        }
+
+        // --- UV SCANNER TOGGLE ---
+        function toggleUVScanner() {
+            playSound('uv');
+            uvActive = !uvActive;
+            const card = document.getElementById('id-card-element');
+            const badge = document.getElementById('uv-badge');
+
+            if (uvActive) {
+                card.classList.add('uv-active');
+                badge.classList.remove('hidden');
+            } else {
+                card.classList.remove('uv-active');
+                badge.classList.add('hidden');
+            }
+        }
+
+        // --- PHONE CALL ---
+        function makePhoneCall() {
+            const inputRoom = document.getElementById('phone-input').value.trim();
+            const resultEl = document.getElementById('phone-result');
+
+            if (!inputRoom) {
+                resultEl.innerText = "❌ 호수를 정확히 입력하세요!";
+                return;
+            }
+
+            playSound('phone');
+            resultEl.innerText = "📞 다이너 세대 전화 통화 연결 중...";
+
+            setTimeout(() => {
+                if (inputRoom === activeVisitor.room) {
+                    if (activeVisitor.flawType === 'id') {
+                        resultEl.innerText = `📞 [통화 성공] "네~ ${activeVisitor.room}호인데요? 저 지금 집에서 버거 먹고 있는데요?! 밖에 있는 건 누구죠?!"`;
+                    } else {
+                        resultEl.innerText = `📞 [통화 무응답] 집이 비어있거나 세대원이 전화를 받지 않습니다.`;
+                    }
+                } else {
+                    resultEl.innerText = `📞 [통화 성공] "전화 잘못 걸었소! 여기는 ${inputRoom}호요!"`;
+                }
+            }, 700);
+        }
+
+        // --- TAB SWITCHING ---
+        function switchTab(tab) {
+            playSound('beep');
+            const idContent = document.getElementById('tab-content-id');
+            const folderContent = document.getElementById('tab-content-folder');
+            const idBtn = document.getElementById('tab-btn-id');
+            const folderBtn = document.getElementById('tab-btn-folder');
+
+            if (tab === 'id') {
+                idContent.classList.remove('hidden');
+                folderContent.classList.add('hidden');
+                idBtn.className = "flex-1 py-2 bg-amber-600 text-stone-950 font-bold rounded-xl transition shadow";
+                folderBtn.className = "flex-1 py-2 bg-stone-800 text-amber-300 rounded-xl transition hover:bg-stone-700 shadow";
+            } else {
+                idContent.classList.add('hidden');
+                folderContent.classList.remove('hidden');
+                folderContent.classList.add('flex');
+                folderBtn.className = "flex-1 py-2 bg-amber-600 text-stone-950 font-bold rounded-xl transition shadow";
+                idBtn.className = "flex-1 py-2 bg-stone-800 text-amber-300 rounded-xl transition hover:bg-stone-700 shadow";
+            }
+        }
+
+        // --- APPROVE VISITOR ---
+        function approveVisitor() {
+            playSound('pass');
+            if (activeVisitor.isDoppelganger) {
+                stats.escaped++;
+                combo = 0;
+            } else {
+                stats.passed++;
+                combo++;
+                score += 100 * combo;
+            }
+            updateScoreUI();
+            nextVisitor();
+        }
+
+        // --- BUST VISITOR (FAT BURGER BUST) ---
+        function bustVisitor() {
+            playSound('bust');
+            triggerScreenShake();
+
+            const overlay = document.getElementById('burger-press-overlay');
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+
+            if (activeVisitor.isDoppelganger) {
+                stats.busted++;
+                combo++;
+                score += 150 * combo;
+            } else {
+                stats.killed++;
+                combo = 0;
+            }
+            updateScoreUI();
+
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+                overlay.classList.remove('flex');
+                nextVisitor();
+            }, 1200);
+        }
+
+        function updateScoreUI() {
+            if (combo > maxCombo) maxCombo = combo;
+            document.getElementById('score-val').innerText = score;
+            document.getElementById('combo-val').innerText = `x${combo}`;
+        }
+
+        function nextVisitor() {
+            currentIdx++;
+            loadVisitor(currentIdx);
+        }
+
+        // --- ENDING & EVALUATION ---
+        function showEnding() {
+            const modal = document.getElementById('ending-modal');
+            const badge = document.getElementById('ending-badge');
+            const title = document.getElementById('ending-title');
+            const desc = document.getElementById('ending-desc');
+
+            document.getElementById('stat-score').innerText = score;
+            document.getElementById('stat-combo').innerText = maxCombo;
+            document.getElementById('stat-busted').innerText = stats.busted;
+            document.getElementById('stat-passed').innerText = stats.passed;
+            document.getElementById('stat-killed').innerText = stats.killed;
+            document.getElementById('stat-escaped').innerText = stats.escaped;
+
+            if (stats.busted === 3 && stats.passed === 2) {
+                badge.innerText = "👑 S급";
+                title.innerText = '"전설의 칼로리 수호자"';
+                desc.innerText = "완벽합니다! 모든 기름진 도플갱어를 10톤 버거 프레스로 다져버리고, 버거 타워의 진짜 묵직한 이웃들만 안심하고 집으로 들여보냈습니다!";
+            } else if (stats.escaped > 0) {
+                badge.innerText = "💀 F급";
+                title.innerText = '"도플갱어에게 빅맥 뺏긴 흑우"';
+                desc.innerText = "도플갱어를 아파트 안으로 들여보내고 말았습니다! 밤중에 도플갱어들이 주민들의 햄버거와 당신의 영혼까지 털어먹었습니다.";
+            } else if (stats.killed > 0) {
+                badge.innerText = "⚠️ C급";
+                title.innerText = '"무고한 버거 이웃 처단자"';
+                desc.innerText = "억울하게 뚱뚱한 무고한 진짜 주민을 도플갱어로 오인해 버거 프레스로 눌러버렸습니다... 숙연한 묵념을 올려주세요.";
+            } else {
+                badge.innerText = "🥇 A급";
+                title.innerText = '"베테랑 칼로리 검문원"';
+                desc.innerText = "훌륭한 검문 능력입니다! 약간의 방심은 있었으나 버거 타워의 평화를 무사히 지켜냈습니다.";
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function resetGame() {
+            currentIdx = 0;
+            score = 0;
+            combo = 0;
+            maxCombo = 0;
+            stats = { busted: 0, passed: 0, killed: 0, escaped: 0 };
+            updateScoreUI();
+            document.getElementById('ending-modal').classList.add('hidden');
+            loadVisitor(0);
+        }
+
+        // --- INITIALIZE GAME ON LOAD ---
+        window.onload = function() {
+            document.getElementById('total-visitor-count').innerText = currentVisitorsList.length;
+            renderResidentDirectory();
+            loadVisitor(0);
+        };
+    </script>
+</body>
+</html>
