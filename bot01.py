@@ -4,9 +4,8 @@ import random
 from datetime import datetime
 import asyncio
 
-print("MTUzMTUxMDc0MjcwMjg4Njk4Mw.Gk41TF.RmShLZwMCq6wZB1xftXPDRZfjM64t6jmiKRPOs")
+print("Input Your Token")
 TOKEN = input()
-# MTUzMTUxMDc0MjcwMjg4Njk4Mw.Gk41TF.RmShLZwMCq6wZB1xftXPDRZfjM64t6jmiKRPOs
 # 봇 감지 우회를 위해 임의의 고유한 접두사 사용 (예: 평범한 채팅과 섞이도록 설정)
 bot = commands.Bot(command_prefix="쿠키야 ", self_bot=True, chunk_guilds_at_startup=False)
 
